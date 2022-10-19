@@ -13,8 +13,10 @@
     (robot-hand-empty ?r - robot)
 
     (item-holder-closed ?ih - item_holder)
-    (item-in-holder ?i - item ?ih - item-holder)
-    (item-in-grasp ?i - item ?r - robot)
+    (item-holder-full ?ih - item_holder)
+    
+    (item-in-holder ?i - item ?ih - item-holder) 
+    (item-in-grasp ?i - item ?r - robot) ; Can we use a 'null' item to remove the need for 'robot-hand-empty'?
     )
 
     ;(drawer-open ?d - drawer)
@@ -73,6 +75,7 @@
         (not (robot-hand-empty ?r)) ; robot hand is not empty
         (item-in-grasp ?i ?r) ; item is in grasp
         (not (item-in-holder ?i ?ih)); item is no longer in holder
+        (not (item-holder-full ?ih)) ; item holder is no longer full
     )
     )
 
@@ -80,17 +83,19 @@
     :parameters (?r - robot ?i - item ?ih - item-holder)
     :precondition (and
         (not (robot-hand-empty ?r)) ; robot has something in arm
-        ; item holder does not have an item in it
-        (forall (?its - item)
-            (not (item-in-holder ?its ?ih))  
-        )
+        (robot-near ?r ?ih) ; robot is near item holder to place in
         (not (item-holder-closed ?ih)) ; Item holder must be open
+        (not (item-holder-full ?ih)) ; item holder does not have an item in it
 
+        ;(forall (?its - item)
+         ;   (not (item-in-holder ?its ?ih))  
+        ;)  
     )   
     :effect (and
         (robot-hand-empty ?r) ; robot hand is empty
         (not (item-in-grasp ?i ?r)) ; item is no longer in grasp
         (item-in-holder ?i ?ih) ; item is now in holder
+        (item-holder-full ?ih) ; item holder is now full
     )
     )
 

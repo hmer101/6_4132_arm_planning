@@ -12,3 +12,8 @@ cd cd padm-project-2022f
 Continue from step 3
 
 
+## Assumptions
+- Robot can only hold a single item at a time
+- The countertop, burner and drawer can each only hold a single item at a time (surfaces could be divided into multiple sections to allow each surface to hold multiple items, but this is not implemented yet).
+- Draw is initially closed and must end closed
+

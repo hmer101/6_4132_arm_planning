@@ -1,18 +1,22 @@
 ; Oct 11, 2022
 
 (define 
-    (problem pdl)
+    (problem move_boxes_kitchen)
     (:domain kitchen)
     (:objects
         spam_box sugar_box - item
         burner countertop - surface
         indigo_drawer_top - drawer
-        robot_name - robot
+        franka - robot
     )
     (:init
-        (robot-hand-empty robot_name)
+        (robot-hand-empty franka)
+
         (item-in-holder sugar_box burner)
         (item-in-holder spam_box countertop)
+
+        (item-holder-full burner)
+        (item-holder-full countertop)
         (item-holder-closed indigo_drawer_top)
     )
     (:goal (and
@@ -21,5 +25,3 @@
         (item-holder-closed indigo_drawer_top)
     ))
 )
-
-
