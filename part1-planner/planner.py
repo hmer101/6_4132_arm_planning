@@ -6,17 +6,82 @@ from pddl_parser.action import Action
 
 
 class Planner():
+
+    def __init__(self, domain_file, problem_file):
+        self.parser = pddl_parser()
+        self.parser.parse_domain(domain_file)
+        self.parser.parse_problem(problem_file)
         
-    def solve(self, domain, problem):
-
-        # Initalizing up the basic parser
-        parser = pddl_parser()
-        parser.parse_domain(domain)
-        parser.parse_problem(problem)
-
+    def solve(self, domain, problem, relaxed=False):
         s = parser.state
         g = parser.positive_goals
-        #goal_not = parser.negative_goals
+        not_g = parser.negative_goals
+        noop = "noop"
+
+        plan = [(s, noop)]
+        
+        i = 0
+        while i < 10000: # (counter just for now to prevent infinite loop)
+            
+            # Checks that the goal has/has not been acheived
+            if s == g and s != not_g:
+                return plan
+
+            # Finds ff for every possible action in a list of tuples 
+            # [(a1, ff(a1)), (a2, ff(a2), ...)]
+            outcomes = [(a,self.ff(s, a)) for a in self.possible_actions(s)]
+            
+            # Chooses the oucome with the highest ff (looking at index 1)
+            a_selection, ff = max(outcomes, key=lambda x: x[1])
+            
+            # Performing the action to get to the next state
+            s_next = self.act(s, a_selection)
+
+            # Iterate
+            s = s_next
+            plan.append( (s, a_selection) )
+
+
+    # returns if the action is possible
+    def possible_action(action, state):
+        return action.positive_preconditions.issubset(state) and action.negative_preconditions.isdisjoint(state)
+
+    # returns all possible actions for a given state
+    def possible_actions(state):
+        return [a for a in self.parser.actions if self.possible_action(a,state)]
+
+
+    def ff(state, action):
+        return self.solve(s_init, goal, not_goal, relaxed=True)
+
+
+    # returns all possible sets of actions
+    #
+    #     DO WE ASSUME IT CAN ONLY DO ONE ACTION AT A TIME? SEEMS REASONABLE
+    #     AND SIMPLIFIES CODE, REDUCES RUNTIME SIGNIFICANTLY. LEFT OUT FOR NOW
+    #
+    def action_combinations(state):
+        return 
+
+
+    def act(self, state, action, relaxed=False):
+        s_next = state
+
+        # Allows this function to be used for ff heuristic
+        if not relaxed:
+            s_next.difference(action.negative_preconditions)
+        
+        s_next.union(action.positive_preconditions)
+        return s_next
+
+
+
+new_state = self.apply(state, act.add_effects, act.del_effects)
+state.difference(negative).union(positive)
+
+
+
+
 
 
 '''
