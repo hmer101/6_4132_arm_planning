@@ -12,7 +12,7 @@ class Planner():
         self.parser.parse_domain(domain_file)
         self.parser.parse_problem(problem_file)
         
-    def solve(self, domain, problem, relaxed=False):
+    def solve(self, relaxed=False):
         s = parser.state
         g = parser.positive_goals
         not_g = parser.negative_goals
@@ -32,25 +32,31 @@ class Planner():
             outcomes = [(a,self.ff(s, a)) for a in self.possible_actions(s)]
             
             # Chooses the oucome with the highest ff (looking at index 1)
-            a_selection, ff = max(outcomes, key=lambda x: x[1])
+            if not relaxed:
+                a_selection, ff = min(outcomes, key=lambda x: x[1])
+            else:
+                a_selection = ____ #SOMETHING, idk what though
             
             # Performing the action to get to the next state
-            s_next = self.act(s, a_selection)
+            s_next = self.act(s, a_selection, relaxed=relaxed)
 
             # Iterate
             s = s_next
             plan.append( (s, a_selection) )
+
+            # There is currently no backup or any A*
+            # Currently only DFS, no A* (need to add BFS at a plateau)
 
 
     # returns if the action is possible
     def possible_action(action, state):
         return action.positive_preconditions.issubset(state) and action.negative_preconditions.isdisjoint(state)
 
-    # returns all possible actions for a given state
+    # returns all possible actions for a given state. NO combinations of actions to prevent mutexes for now
     def possible_actions(state):
         return [a for a in self.parser.actions if self.possible_action(a,state)]
 
-
+    # 
     def ff(state, action):
         return self.solve(s_init, goal, not_goal, relaxed=True)
 
@@ -66,7 +72,7 @@ class Planner():
 
     def act(self, state, action, relaxed=False):
         s_next = state
-
+        
         # Allows this function to be used for ff heuristic
         if not relaxed:
             s_next.difference(action.negative_preconditions)
