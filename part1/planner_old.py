@@ -1,7 +1,7 @@
 # Looking at the folllowing repo:
 # https://github.com/pucrs-automated-planning/pddl-parser
 
-from pddl_parser.PDDL import pddl_parser
+from .PDDL import pddl_parser
 from pddl_parser.action import Action
 
 
