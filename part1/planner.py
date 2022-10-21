@@ -44,10 +44,10 @@ class Planner():
             #num_actions_poss = 0    # Reset number of actions possible in this state
         
             # Find list of next possible actions (starting with helpful actions)
-            actions_ordered = self.ordered_actions(state, action_plan_relaxed)
+            helpful, unhelpful = self.ordered_actions(state, action_plan_relaxed)
 
-            # Search through ordered actions (which are already known to be possible)
-            for a_dash in actions_ordered:
+            # Search through helpful actions (which are already known to be possible)
+            for a_dash in helpful:
                 # Try selected possible action
                 next_state = self.act(state, a_dash, relaxed)
 
@@ -63,8 +63,27 @@ class Planner():
                     flag_next_found = True
                     break
 
+            # if the function is NOT running through the ff heuristic, it also checks the unhelpful actions
+            if not relaxed:
+                # Search through ordered actions (which are already known to be possible)
+                for a_dash in unhelpful:
+                    # Try selected possible action
+                    next_state = self.act(state, a_dash, relaxed)
 
-            if len(actions_ordered) == 0:
+                    # Find heuristic of next state
+                    action_plan_relaxed = self.solve(next_state, h_curr, True)
+                    h_next = len(action_plan_relaxed)
+
+                    # If heuristic of next state is lower than current state, take action
+                    if h_next < h_curr:
+                        h_curr = h_next 
+                        state = next_state
+                        action_plan.append(a_dash)
+                        flag_next_found = True
+                        break
+
+
+            if (len(helpful) + len(unhelpful)) == 0:
                 # Reached a dead end - try A* search (unimplemented currently)
                 #action_plan = A_star(self.s_0, self.s_goal_pos, self.s_goal_neg, self.actions)
                 print('DEAD END REACHED \n')
@@ -105,7 +124,8 @@ class Planner():
     # Returns an ordered list of actions possible from 'state' to be searched through - starting with helpful actions
     # UNTESTED!!
     def ordered_actions(self, state, action_plan_relaxed):
-        actions_ordered = []
+        helpful = []
+        unhelpful = []
         possible_actions = self.possible_actions(state)
         
         # Find helpful actions  
@@ -115,7 +135,7 @@ class Planner():
             
             # The first action in the relaxed plan is always helpful (if possible)
             if self.possible_action(action_plan_relaxed_next, state):
-                actions_ordered.append(action_plan_relaxed_next) 
+                helpful.append(action_plan_relaxed_next) 
 
             next_state_relaxed = self.act(state,action_plan_relaxed_next, False) # Finds the next state generated using the relaxed plan
 
@@ -126,14 +146,14 @@ class Planner():
                 
                 # If any facts in the next_state_relaxed are also created by a_dash, a_dash is helpful
                 if (not next_state_relaxed.isdisjoint(next_state_test)) and (a_dash != action_plan_relaxed_next):
-                    actions_ordered.append(a_dash)
+                    helpful.append(a_dash)
 
         # Add all other actions
         for a_dash in possible_actions:
-            if actions_ordered.count(a_dash) == 0:
-                actions_ordered.append(a_dash)
+            if unhelpful.count(a_dash) == 0:
+                unhelpful.append(a_dash)
 
-        return actions_ordered
+        return helpful, unhelpful
 
 
 # -----------------------------------------------

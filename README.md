@@ -41,7 +41,12 @@ python3 -B -m pddl_parser.planner domain.pddl problem.pddl -v
     - 
 
 ## Challenges and Alternative Approaches
-- Graph plan, 
+- Recursive solver such that the function could be used for both the ff heuristic and the actual planner.
+  - Infinite recursion is still a concern, but we are working out a way to determine an exit condition before the solver calls itself to prevent an infintie recursion.
+  - Currently, our ff will only return values for "helpful" actions
+- A graph plan was condsidered, where the action with the lowest ff heuristic was selected.
+  - One issue is that our recursive solver resulted in an infinite loop.
+- Our planner also has contingencies built in for when dead ends or a plateau are reached.
 
 ### Current Issues
 - When running domain and problem with PDDL_parser's inbuild BFS planner, returns 'no plan was found' in 0.000566 seconds
