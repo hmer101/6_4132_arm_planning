@@ -17,24 +17,33 @@ Continue from step 3
 
 Parse with PDDL Parser:
 
-cd part1-pddl
+cd part1 \n
 python3 -B -m pddl_parser.PDDL domain.pddl problem.pddl -v
 
 
 PDDL Parser's inbuild planner on custom domain/problem:
 
-cd part1-pddl
+cd part1 \n
 python3 -B -m pddl_parser.planner domain.pddl problem.pddl -v
 
 
-
+# Part 1
 ## Assumptions
 - Robot can only hold a single item at a time
 - The countertop, burner and drawer can each only hold a single item at a time (surfaces could be divided into multiple sections to allow each surface to hold multiple items, but this is not implemented yet).
 - Draw is initially closed and must end closed
 
 
-## Current Issues
+## Files
+- domain.PDDL
+- problem.PDDL
+- planner.py
+    - 
+
+## Challenges and Alternative Approaches
+- Graph plan, 
+
+### Current Issues
 - When running domain and problem with PDDL_parser's inbuild BFS planner, returns 'no plan was found' in 0.000566 seconds
 
 
