@@ -17,28 +17,41 @@ Continue from step 3
 
 Parse with PDDL Parser:
 
-cd part1 \n
+cd part1
 python3 -B -m pddl_parser.PDDL domain.pddl problem.pddl -v
 
 
 PDDL Parser's inbuild planner on custom domain/problem:
 
-cd part1 \n
+cd part1
 python3 -B -m pddl_parser.planner domain.pddl problem.pddl -v
 
 
 # Part 1
 ## Assumptions
-- Robot can only hold a single item at a time
+**Domain/Problem**
+- Robot can only hold a single item at a time.
 - The countertop, burner and drawer can each only hold a single item at a time (surfaces could be divided into multiple sections to allow each surface to hold multiple items, but this is not implemented yet).
-- Draw is initially closed and must end closed
+- Draw is initially closed and must end closed.
+
+**Planner**
+- Only a single action can be taken at a time.
+- 
 
 
 ## Files
+Contained in part1 folder.
+
 - domain.PDDL
 - problem.PDDL
 - planner.py
-    - 
+    - Syntax is based on interfacing with the pddl_parser's test planner
+    - Solver uses a simplified fast forward planner that:
+       a) Uses enforced hill climbing
+       b) Resorts to BFS at plateaus in h_FF - NOT YET IMPLEMENTED     
+       c) Uses the related planning graph to generate h_FF
+       d) Can only select a single action at each layer
+       e) Resorts to A* search on EHC failure (when a dead-end is reached) - NOT YET IMPLEMENTED
 
 ## Challenges and Alternative Approaches
 - Recursive solver such that the function could be used for both the ff heuristic and the actual planner.
@@ -50,6 +63,7 @@ python3 -B -m pddl_parser.planner domain.pddl problem.pddl -v
 
 ### Current Issues
 - When running domain and problem with PDDL_parser's inbuild BFS planner, returns 'no plan was found' in 0.000566 seconds
+- There is no limit to the depth of search which could result in an infinite search 
 
 
 
