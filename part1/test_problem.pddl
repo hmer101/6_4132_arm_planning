@@ -3,7 +3,7 @@
 ; TO DO: TEST EACH ACTION INDIVIDUALLY
 
 (define (problem test_problem)
-    (:domain test_domain)
+    (:domain test_domain_2)
     (:objects
         franka - robot
         burner countertop - surface
@@ -11,18 +11,21 @@
         indigo_drawer_top - drawer
     )
     (:init
-        (robot-hand-empty franka)
-        (robot-near franka countertop)
-        ; all item-holder-closed are false
+        ;(robot-hand-empty franka)
+        ;(robot-near franka sugar_box)
+        ;(robot-near franka countertop)
+        ;(item-in-holder sugar_box countertop)
+        ; item-holder-closed is false
 
-        (item-in-holder sugar_box countertop)
-        ;(item-in-holder spam_box countertop)
-        ;(item-holder-full burner)
-        ;(item-holder-full countertop)
-        ;(item-holder-closed indigo_drawer_top)
+        (robot-near franka countertop)
+
+        
     )
 
     (:goal (and
-        (item-holder-full franka)
+        ;(item-in-grasp sugar_box franka)
+        (robot-near franka indigo_drawer_top)
+
+
     ))
 )
