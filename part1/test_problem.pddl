@@ -11,21 +11,20 @@
         indigo_drawer_top - drawer
     )
     (:init
-        ;(robot-hand-empty franka)
-        ;(robot-near franka sugar_box)
-        ;(robot-near franka countertop)
-        ;(item-in-holder sugar_box countertop)
-        ; item-holder-closed is false
-
+        
         (robot-near franka countertop)
+        (robot-hand-empty franka)
+        (item-holder-closed indigo_drawer_top)
 
+        (item-holder-full countertop)
+        (item-in-holder spam_box countertop)
+        
         
     )
 
     (:goal (and
-        ;(item-in-grasp sugar_box franka)
-        (robot-near franka indigo_drawer_top)
 
+        (item-in-holder spam_box indigo_drawer_top)
 
     ))
 )
