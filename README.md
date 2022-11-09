@@ -64,6 +64,6 @@ Contained in part1 folder.
 ### Current Issues
 - When running domain and problem with PDDL_parser's inbuild BFS planner, returns 'no plan was found' in 0.000566 seconds
 - There is no limit to the depth of search which could result in an infinite search 
-
+- Will reach a plateau with negative goals as h_FF doesn't account for actions required to remove predicates (possibly fix by adding all delete effects as add effects and negative goal conditions as positive goal conditions?)
 
 

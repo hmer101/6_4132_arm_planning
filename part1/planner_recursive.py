@@ -30,17 +30,23 @@ class Planner():
     #   c) Uses the relaxed planning graph to generate h_FF
     #   d) Can only select a single action at each layer
     #   e) Resorts to A* search on EHC failure (when a dead-end is reached) - NOT YET IMPLEMENTED
-    def solve(self):
+    def solve(self, state_curr, h_max=float('inf'), relaxed=False):
         # Initialise solution
-        state = self.s_0 
-        h_curr = float('inf') # HOW USE H_MAX TO PRUNE/SET MAX DEPTH??????? 
+        state = state_curr #self.s_0 # NEED TO CHANGE when calling for relaxed??? - see below for relaxed -> does this solve?
+        h_curr = h_max #float('inf') # HOW USE H_MAX TO PRUNE/SET MAX DEPTH??????? - see below for relaxed -> does this solve?
+        
+        # If this is a recursive call to solve the relaxed graph, retain present state and h
+        #if relaxed:
+         #   state = state_curr
+          #  h_curr = h_max
         
         # DO WE NEED BOTH OF THESE????
         action_plan = []
-        action_plan_relaxed = [] #list of sets of actions? or list of list of actions?
+        action_plan_relaxed = []
+        #num_actions_poss = 0 # Only need if not using ordered_actions list - remember to switch on reset
 
         # Continue performing actions while not in the goal state
-        #i = 0
+        i = 0
         while not self.applicable(state, self.s_goal_pos, self.s_goal_neg):
             flag_next_found = False # True if a next possible action has been found
             #num_actions_poss = 0    # Reset number of actions possible in this state
@@ -49,18 +55,18 @@ class Planner():
             actions_ordered = self.ordered_actions(state, action_plan_relaxed)
 
             #print("ACTIONS ORDERED", (actions_ordered[i] for i in range(len(actions_ordered))))
-            # if i == 1:
-            #     return actions_ordered
+            if i == 1:
+                return actions_ordered
 
             # Search through ordered actions (which are already known to be possible)
             for a_dash in actions_ordered:
                 # Try selected possible action
-                next_state = self.act(state, a_dash, False) #True rather than relaxed?
+                next_state = self.act(state, a_dash, relaxed) #True rather than relaxed?
                 
 
                 # Find heuristic of next state
-                action_plan_relaxed, h_next = self.relaxed_plan(next_state) #self.solve(next_state, h_curr, True)
-                #h_next = len(action_plan_relaxed)
+                action_plan_relaxed = self.solve(next_state, h_curr, True)
+                h_next = len(action_plan_relaxed)
 
                 # If heuristic of next state is lower than current state, take action
                 if h_next < h_curr:
@@ -71,7 +77,7 @@ class Planner():
                     break
 
 
-            if len(actions_ordered) == 0: #and not self.applicable(state, self.s_goal_pos, self.s_goal_neg) - incase goal is dead end?
+            if len(actions_ordered) == 0:
                 # Reached a dead end - try A* search (unimplemented currently)
                 #action_plan = A_star(self.s_0, self.s_goal_pos, self.s_goal_neg, self.actions)
                 print('DEAD END REACHED \n')
@@ -84,7 +90,7 @@ class Planner():
                 print('PLATEAU REACHED \n')
                 break # REMOVE BREAK ONCE IMPLEMENTED
 
-            #i = i+1
+            i = i+1
 
         return action_plan
 
@@ -98,7 +104,7 @@ class Planner():
 
     # returns all possible actions for a given state. NO combinations of actions to prevent mutexes for now
     def possible_actions(self, state):
-        return [a for a in self.actions if self.possible_action(a,state)]
+        return [a for a in self.parser.actions if self.possible_action(a,state)]
 
     # Performs an action on a state and returns the resulting state (replaced apply in BFS example planner)
     def act(self, state, action, relaxed=False):
@@ -116,10 +122,10 @@ class Planner():
         actions_ordered = []
         possible_actions = self.possible_actions(state)
         
-        # Find helpful actions  - UNCOMMENT AND TEST (note action_plan_relaxed may now have multiple actions per layer -> only take first layer and search through actions in that layer)
+        # Find helpful actions  - UNCOMMENT AND TEST
         # Helpful actions only exist if a relaxed plan has been generated
         # if len(action_plan_relaxed) != 0:
-        #     action_plan_relaxed_next = action_plan_relaxed[0] # THIS LINE NEEDS TO BE FIXED
+        #     action_plan_relaxed_next = action_plan_relaxed[0]
             
         #     # The first action in the relaxed plan is always helpful (if possible)
         #     if self.possible_action(action_plan_relaxed_next, state):
@@ -144,87 +150,6 @@ class Planner():
         return actions_ordered
 
 
-    # Finds the relaxed plan and heuristic from the target to goal state
-    def relaxed_plan(self, target):
-        # Generate relaxed plan
-        relaxed_act_record = list()
-        #test = len(relaxed_act_record)
-        state = target
-
-        # Keep adding action layers to relaxed graph whilst the goal state hasn't be reached
-        # Note as delete effects are removed, cannot check if negative goal conidtions are satisfied !!!
-        while not set(self.s_goal_pos).issubset(set(state)):
-            actions_poss_full = self.possible_actions(state)   # Find possible actions in current state
-            actions_poss = []
-
-            # EXPERIMENTAL!!!!
-            # Only add possible actions that actually add something (prevents h_ff plateaus from useless actions)
-            for test_act in actions_poss_full:
-                if not test_act.add_effects.issubset(set(state)):
-                    actions_poss.append(test_act)
-            
-            relaxed_act_record.append(actions_poss) # ENSURE THIS PRODUCES A 2D list!!!
-
-            # Generate next state in the relaxed plan by applying all possible (relaxed) actions
-            next_state = state
-
-            for action in actions_poss:
-                next_state = self.act(next_state, action, True)
-
-            state = next_state
-
-        # Extract plan and generate heuristic by moving back through action layers
-        # Note as delete effects are removed, cannot check if negative goal conidtions are satisfied !!!
-        back_state = set(self.s_goal_pos)
-        plan_relaxed = []
-
-        # If the relaxed plan is empty (i.e. the target is already at the goal)
-        if relaxed_act_record is None:
-            return [], 0
-        
-        for act_num in range(len(relaxed_act_record)-1, -1,-1): # SEARCH UNTIL FIND TARGET STATE INSTEAD???
-            # Search through actions that produce back_state
-            acts = relaxed_act_record[act_num]
-            back_state_next = set()
-            next_acts = list()
-
-            for action in acts:
-                # If actions produce states that are desired
-                if not action.add_effects.isdisjoint(back_state):
-                    # If an action produces effects that are present in the desired state, add it to the actions to take
-                    next_acts.append(action)
-
-                    # Remove the effects present in back_state that are produced by the action just added
-                    for add_eff in action.add_effects:
-                        try:
-                            back_state.remove(add_eff)
-                        except:
-                            pass
-
-                    # Add the required preconditions of the action to the next state to search for
-                    for add_precond in action.positive_preconditions:
-                        back_state_next.add(add_precond)
-
-                    #back_state_next.add(action.positive_preconditions)
-
-                # If all actions required to produce this state have been found
-                if len(back_state) == 0:
-                    break
-            
-            # Record actions to take in this step and move to next state
-            plan_relaxed.append(next_acts) # NEED set(next_acts)?
-            back_state = back_state_next
-
-        # Flip relaxed plan to be in forward direction
-        plan_relaxed.reverse()        
-
-        # Calculate heuristic by counting the number of actions in the relaxed plan
-        h_ff = sum([len(act_layer) for act_layer in plan_relaxed])
-
-        return plan_relaxed, h_ff
-
-
-
 # -----------------------------------------------
 # Main - copied from planner.py from pddl_parser
 # -----------------------------------------------
@@ -234,8 +159,8 @@ if __name__ == '__main__':
 
     # Run on default domain and problem - for project
     dirname = os.path.dirname(__file__)
-    domain = os.path.join(dirname,'blocksworld.pddl') #dinner
-    problem = os.path.join(dirname,'pb4_blocksworld.pddl') #pb1
+    domain = os.path.join(dirname,'dinner.pddl')
+    problem = os.path.join(dirname,'pb1.pddl')
     verbose = True
 
     # If arguments are given, replace problem to run on
@@ -246,7 +171,7 @@ if __name__ == '__main__':
 
     # Solve problem using action planner
     planner = Planner(domain, problem)
-    plan = planner.solve()
+    plan = planner.solve(planner.s_0)
     print('Time: ' + str(time.time() - start_time) + 's')
     if type(plan) is list:
         print('plan:')
