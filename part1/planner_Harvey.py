@@ -106,10 +106,22 @@ class Planner():
         
         # Allows this function to be used for ff heuristic
         if not relaxed:
-            s_next.difference(action.del_effects)
+            s_next = s_next.difference(action.del_effects)
+        # else:
+        #     s_next.union(not action.del_effects)
         
         s_next = s_next.union(action.add_effects)
         return s_next
+
+    # def act_relaxed(self, state_pos, state_neg, action):
+    #     s_next_pos = state_pos
+    #     s_next_neg = state_neg
+
+    #     s_next_pos.union(action.add_effects)
+    #     s_next_neg.union(action.del_effects)
+
+    #     return s_next_pos, s_next_neg
+
 
     # Returns an ordered list of actions possible from 'state' to be searched through - starting with helpful actions
     def ordered_actions(self, state, action_plan_relaxed):
@@ -152,7 +164,7 @@ class Planner():
         state = target
 
         # Keep adding action layers to relaxed graph whilst the goal state hasn't be reached
-        # Note as delete effects are removed, cannot check if negative goal conidtions are satisfied !!!
+        # Note as delete effects are removed, cannot check if negative goal conditions are satisfied !!!
         while not set(self.s_goal_pos).issubset(set(state)):
             actions_poss_full = self.possible_actions(state)   # Find possible actions in current state
             actions_poss = []
@@ -234,8 +246,8 @@ if __name__ == '__main__':
 
     # Run on default domain and problem - for project
     dirname = os.path.dirname(__file__)
-    domain = os.path.join(dirname,'blocksworld.pddl') #dinner
-    problem = os.path.join(dirname,'pb4_blocksworld.pddl') #pb1
+    domain = os.path.join(dirname,'test_domain.pddl') #dinner blocksworld.pddl test_domain.pddl
+    problem = os.path.join(dirname,'test_problem.pddl') #pb1 pb4_blocksworld.pddl test_problem.pddl
     verbose = True
 
     # If arguments are given, replace problem to run on
