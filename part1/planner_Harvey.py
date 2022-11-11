@@ -32,7 +32,7 @@ class Planner():
     #   e) Resorts to A* search on EHC failure (when a dead-end is reached) - NOT YET IMPLEMENTED
     def solve(self):
         # Initialise solution
-        state = self.s_0 
+        state = set(self.s_0) 
         h_curr = float('inf') # HOW USE H_MAX TO PRUNE/SET MAX DEPTH??????? 
         
         # DO WE NEED BOTH OF THESE????
@@ -55,7 +55,7 @@ class Planner():
             # Search through ordered actions (which are already known to be possible)
             for a_dash in actions_ordered:
                 # Try selected possible action
-                next_state = self.act(state, a_dash, False) #True rather than relaxed?
+                next_state = self.act(state, a_dash) #True rather than relaxed?
                 
 
                 # Find heuristic of next state
@@ -101,26 +101,28 @@ class Planner():
         return [a for a in self.actions if self.possible_action(a,state)]
 
     # Performs an action on a state and returns the resulting state (replaced apply in BFS example planner)
-    def act(self, state, action, relaxed=False):
+    def act(self, state, action): #, relaxed=False):
         s_next = state
         
         # Allows this function to be used for ff heuristic
-        if not relaxed:
-            s_next = s_next.difference(action.del_effects)
+        #if not relaxed:
+        s_next = s_next.difference(action.del_effects)
         # else:
         #     s_next.union(not action.del_effects)
         
         s_next = s_next.union(action.add_effects)
+
         return s_next
 
-    # def act_relaxed(self, state_pos, state_neg, action):
-    #     s_next_pos = state_pos
-    #     s_next_neg = state_neg
+    # Performs a relaxed action on a state and returns the resulting positive and negative parts of the state
+    def act_relaxed(self, state_pos, state_neg, action):
+        s_next_pos = state_pos
+        s_next_neg = state_neg
 
-    #     s_next_pos.union(action.add_effects)
-    #     s_next_neg.union(action.del_effects)
+        s_next_pos = s_next_pos.union(action.add_effects)
+        s_next_neg = s_next_neg.union(action.del_effects)
 
-    #     return s_next_pos, s_next_neg
+        return s_next_pos, s_next_neg
 
 
     # Returns an ordered list of actions possible from 'state' to be searched through - starting with helpful actions
@@ -162,54 +164,72 @@ class Planner():
         relaxed_act_record = list()
         #test = len(relaxed_act_record)
         state = target
+        state_removed = set()
+
 
         # Keep adding action layers to relaxed graph whilst the goal state hasn't be reached
-        # Note as delete effects are removed, cannot check if negative goal conditions are satisfied !!!
-        while not set(self.s_goal_pos).issubset(set(state)):
-            actions_poss_full = self.possible_actions(state)   # Find possible actions in current state
-            actions_poss = []
+        # Need to remove the predicates present in the target and in the negative goals 
+        state_need_removing = set(self.s_goal_neg) & target
 
-            # EXPERIMENTAL!!!!
-            # Only add possible actions that actually add something (prevents h_ff plateaus from useless actions)
-            for test_act in actions_poss_full:
-                if not test_act.add_effects.issubset(set(state)):
-                    actions_poss.append(test_act)
+        while not (set(self.s_goal_pos).issubset(state) and state_need_removing.issubset(state_removed)):
+            actions_poss = self.possible_actions(state)   # Find possible actions in current state
+            #actions_poss = []
+
+            # WILL THIS HELP??
+
+
+
+            #### HEREREEREREEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE ############################################## (NOTE: Debug blocksworld!!!!)
+
+            # Only add possible actions that actually add something (prevents repeat actions)
+            # for test_act in actions_poss_full:
+            #     if not test_act.add_effects.issubset(state) or not test_act.del_effects.issubset(state_removed)):
+            #         actions_poss.append(test_act)
             
-            relaxed_act_record.append(actions_poss) # ENSURE THIS PRODUCES A 2D list!!!
+            relaxed_act_record.append(actions_poss) 
 
             # Generate next state in the relaxed plan by applying all possible (relaxed) actions
             next_state = state
+            next_state_removed = state_removed
 
             for action in actions_poss:
-                next_state = self.act(next_state, action, True)
+                next_state, next_state_removed = self.act_relaxed(next_state, next_state_removed, action)
 
             state = next_state
+            state_removed = next_state_removed
 
         # Extract plan and generate heuristic by moving back through action layers
-        # Note as delete effects are removed, cannot check if negative goal conidtions are satisfied !!!
         back_state = set(self.s_goal_pos)
+        back_state_remove = set(self.s_goal_neg)
         plan_relaxed = []
 
         # If the relaxed plan is empty (i.e. the target is already at the goal)
         if relaxed_act_record is None:
             return [], 0
         
-        for act_num in range(len(relaxed_act_record)-1, -1,-1): # SEARCH UNTIL FIND TARGET STATE INSTEAD???
+        for act_num in range(len(relaxed_act_record)-1, -1,-1): # SEARCH UNTIL FIND TARGET STATE INSTEAD??? while not (.issubset(back_state) and .issubset()): 
             # Search through actions that produce back_state
             acts = relaxed_act_record[act_num]
             back_state_next = set()
+            back_state_remove_next = set()
             next_acts = list()
-
+            
             for action in acts:
-                # If actions produce states that are desired
-                if not action.add_effects.isdisjoint(back_state):
+                # If actions produce states that are desired and are not already present in the target
+                if not action.add_effects.isdisjoint(back_state) or not action.del_effects.isdisjoint(back_state_remove): # NEED DEL EFFECTS PART??
                     # If an action produces effects that are present in the desired state, add it to the actions to take
                     next_acts.append(action)
 
-                    # Remove the effects present in back_state that are produced by the action just added
+                    # Remove the effects present in back_state and back_state_removed that are produced by the action just added
                     for add_eff in action.add_effects:
                         try:
                             back_state.remove(add_eff)
+                        except:
+                            pass
+
+                    for del_eff in action.del_effects: # NEED???
+                        try:
+                            back_state_remove.remove(del_eff)
                         except:
                             pass
 
@@ -217,15 +237,19 @@ class Planner():
                     for add_precond in action.positive_preconditions:
                         back_state_next.add(add_precond)
 
+                    for del_precond in action.negative_preconditions: # NEED??
+                        back_state_remove_next.add(del_precond)
+
                     #back_state_next.add(action.positive_preconditions)
 
                 # If all actions required to produce this state have been found
-                if len(back_state) == 0:
+                if len(back_state) == 0 and len(back_state_remove) == 0:
                     break
             
             # Record actions to take in this step and move to next state
-            plan_relaxed.append(next_acts) # NEED set(next_acts)?
+            plan_relaxed.append(next_acts)
             back_state = back_state_next
+            back_state_remove = back_state_remove_next
 
         # Flip relaxed plan to be in forward direction
         plan_relaxed.reverse()        
@@ -247,7 +271,7 @@ if __name__ == '__main__':
     # Run on default domain and problem - for project
     dirname = os.path.dirname(__file__)
     domain = os.path.join(dirname,'test_domain.pddl') #dinner blocksworld.pddl test_domain.pddl
-    problem = os.path.join(dirname,'test_problem.pddl') #pb1 pb4_blocksworld.pddl test_problem.pddl
+    problem = os.path.join(dirname,'test_problem.pddl') #pb1_dinner pb4_blocksworld.pddl test_problem.pddl
     verbose = True
 
     # If arguments are given, replace problem to run on
