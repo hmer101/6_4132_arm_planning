@@ -11,13 +11,15 @@
     )
     (:init
         (robot-hand-empty franka)
-
+        (robot-near franka burner)
+        ; all item-holder-closed are false
+        
         (item-in-holder sugar_box burner)
         (item-in-holder spam_box countertop)
-
         (item-holder-full burner)
         (item-holder-full countertop)
         (item-holder-closed indigo_drawer_top)
+
     )
     (:goal (and
         (item-in-holder sugar_box countertop)
