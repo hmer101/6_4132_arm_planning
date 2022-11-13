@@ -5,28 +5,26 @@ from pddl_parser.PDDL import PDDL_Parser
 from pddl_parser.action import Action
 import os
 
-class Planner():
 
-    def __init__(self, domain_file, problem_file):
-        self.parser = PDDL_Parser()
-        self.parser.parse_domain(domain_file)
-        self.parser.parse_problem(problem_file)
+class Node():
+    def __init__(self, state, parent):
+        self.state = state
+        self.parent = parent
+    
 
+class BFS_Planner():
+    def __init__(self, s_0, positive_goals, negative_goals, actions):
         # Parse initial and goal states
-        self.s_0 = self.parser.state
-        self.s_goal_pos = self.parser.positive_goals
-        self.s_goal_neg = self.parser.negative_goals
+        self.s_0 = s_0
+        self.s_goal_pos = positive_goals
+        self.s_goal_neg = negative_goals
 
         # Parse/ground actions
-        self.actions = []
-        for action in self.parser.actions:
-            for act in action.groundify(self.parser.objects, self.parser.types):
-                self.actions.append(act)
+        self.actions = actions
 
 
     # Solver uses a BFS Planner:
     def solve(self):
-
         # Exit condition
         if self.at_goal(self.s_0):
             return []
@@ -52,7 +50,7 @@ class Planner():
                     # Obtain the next next state
                     next_s = self.act(state, a)
                     if next_s in visited:
-                        pass
+                        continue
                     visited.add(next_s)
                     next_action_plan = [b for b in action_plan]#.append(a)
                     next_action_plan.append(a)
@@ -119,6 +117,24 @@ if __name__ == '__main__':
     verbose = False
     debug = False
 
+
+    # Seperate parser from BFS planner
+    parser = PDDL_Parser()
+    parser.parse_domain(domain)
+    parser.parse_problem(problem)
+    # Parse initial and goal states
+    s_0 = parser.state
+    s_goal_pos = parser.positive_goals
+    s_goal_neg = parser.negative_goals
+    # Parse/ground actions
+    actions = []
+    for action in parser.actions:
+        for act in action.groundify(parser.objects, parser.types):
+            actions.append(act)
+
+
+
+
     # If arguments are given, replace problem to run on
     if len(sys.argv) > 1:
         domain = sys.argv[1]
@@ -126,7 +142,7 @@ if __name__ == '__main__':
         verbose = len(sys.argv) > 3 and sys.argv[3] == '-v'
 
     # Solve problem using action planner
-    planner = Planner(domain, problem)
+    planner = BFS_Planner(s_0, s_goal_pos, s_goal_neg, actions)
     plan = planner.solve()
     print('Time: ' + str(time.time() - start_time) + 's')
 
