@@ -5,7 +5,7 @@ from pddl_parser.PDDL import PDDL_Parser
 from pddl_parser.action import Action
 import os
 
-class Planner():
+class FF_Planner():
 
     def __init__(self, domain_file, problem_file):
         self.parser = PDDL_Parser()
@@ -60,16 +60,27 @@ class Planner():
 
                 # Find heuristic of next state
                 action_plan_relaxed, h_next = self.relaxed_plan(next_state) #self.solve(next_state, h_curr, True)
-                #h_next = len(action_plan_relaxed)
+                print(("State:{}\nAction: {}, {}\nhFF: {}").format(next_state, a_dash.name,a_dash.parameters, h_next))
 
-                # If heuristic of next state is lower than current state, take action
+                
+            #     if h_next < h_best:
+            #         h_best = h_next
+            #         a_best = a_dash
+
+            # action_plan.append(a_best)
+
+                # If heuristic of next state is lower than current state, take action - enforced hill climbing
                 if h_next < h_curr:
                     h_curr = h_next 
                     state = next_state
                     action_plan.append(a_dash)
                     flag_next_found = True
                     break
-
+            
+            
+            
+            
+            print('---------------------------------------------------------\n')
 
             if len(actions_ordered) == 0: #and not self.applicable(state, self.s_goal_pos, self.s_goal_neg) - incase goal is dead end?
                 # Reached a dead end - try A* search (unimplemented currently)
@@ -96,9 +107,20 @@ class Planner():
     def possible_action(self, action, state):
         return action.positive_preconditions.issubset(state) and action.negative_preconditions.isdisjoint(state)
 
+    # returns if the action is possible in relaxed
+    # Positive preconditions are present in the state and negative preconditions that haven't been removed are not present in the start/target state (i.e. negative preconditions are satisfied)
+    def possible_action_relaxed(self, action, state_pos, start_state, state_removed):
+        return action.positive_preconditions.issubset(state_pos) and ((action.negative_preconditions - state_removed).isdisjoint(start_state))
+
+
     # returns all possible actions for a given state. NO combinations of actions to prevent mutexes for now
     def possible_actions(self, state):
         return [a for a in self.actions if self.possible_action(a,state)]
+
+    # returns all possible actions in a given state in the relaxed graph
+    def possible_actions_relaxed(self, state_pos, start_state, state_removed):
+        return [a for a in self.actions if self.possible_action_relaxed(a, state_pos, start_state, state_removed)]
+
 
     # Performs an action on a state and returns the resulting state (replaced apply in BFS example planner)
     def act(self, state, action): #, relaxed=False):
@@ -172,15 +194,11 @@ class Planner():
         state_need_removing = set(self.s_goal_neg) & target
 
         while not (set(self.s_goal_pos).issubset(state) and state_need_removing.issubset(state_removed)):
-            actions_poss = self.possible_actions(state)   # Find possible actions in current state
+            #actions_poss = self.possible_actions(state)   # Find possible actions in current state
+            actions_poss = self.possible_actions_relaxed(state, target, state_removed)
             #actions_poss = []
 
             # WILL THIS HELP??
-
-
-
-            #### HEREREEREREEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE ############################################## (NOTE: Debug blocksworld!!!!)
-
             # Only add possible actions that actually add something (prevents repeat actions)
             # for test_act in actions_poss_full:
             #     if not test_act.add_effects.issubset(state) or not test_act.del_effects.issubset(state_removed)):
@@ -200,14 +218,14 @@ class Planner():
 
         # Extract plan and generate heuristic by moving back through action layers
         back_state = set(self.s_goal_pos)
-        back_state_remove = set(self.s_goal_neg)
+        back_state_remove = state_need_removing
         plan_relaxed = []
 
         # If the relaxed plan is empty (i.e. the target is already at the goal)
         if relaxed_act_record is None:
             return [], 0
         
-        for act_num in range(len(relaxed_act_record)-1, -1,-1): # SEARCH UNTIL FIND TARGET STATE INSTEAD??? while not (.issubset(back_state) and .issubset()): 
+        for act_num in range(len(relaxed_act_record)-1, -1,-1):
             # Search through actions that produce back_state
             acts = relaxed_act_record[act_num]
             back_state_next = set()
@@ -216,7 +234,7 @@ class Planner():
             
             for action in acts:
                 # If actions produce states that are desired and are not already present in the target
-                if not action.add_effects.isdisjoint(back_state) or not action.del_effects.isdisjoint(back_state_remove): # NEED DEL EFFECTS PART??
+                if not action.add_effects.isdisjoint(back_state) or not action.del_effects.isdisjoint(back_state_remove):
                     # If an action produces effects that are present in the desired state, add it to the actions to take
                     next_acts.append(action)
 
@@ -224,23 +242,22 @@ class Planner():
                     for add_eff in action.add_effects:
                         try:
                             back_state.remove(add_eff)
-                        except:
+                        except: # Add effect not present in the back state
                             pass
 
-                    for del_eff in action.del_effects: # NEED???
+                    for del_eff in action.del_effects:
                         try:
                             back_state_remove.remove(del_eff)
-                        except:
+                        except: # Delete effect not present in the back state remove
                             pass
 
                     # Add the required preconditions of the action to the next state to search for
                     for add_precond in action.positive_preconditions:
                         back_state_next.add(add_precond)
 
-                    for del_precond in action.negative_preconditions: # NEED??
-                        back_state_remove_next.add(del_precond)
-
-                    #back_state_next.add(action.positive_preconditions)
+                    # Add the required negative preconditions of the action that aren't satisfied in the target i.e. need to be satisfied before this action can be taken
+                    for del_precond in (action.negative_preconditions & target):
+                       back_state_remove_next.add(del_precond)
 
                 # If all actions required to produce this state have been found
                 if len(back_state) == 0 and len(back_state_remove) == 0:
@@ -281,7 +298,7 @@ if __name__ == '__main__':
         verbose = len(sys.argv) > 3 and sys.argv[3] == '-v'
 
     # Solve problem using action planner
-    planner = Planner(domain, problem)
+    planner = FF_Planner(domain, problem)
     plan = planner.solve()
     print('Time: ' + str(time.time() - start_time) + 's')
     if type(plan) is list:
@@ -291,30 +308,4 @@ if __name__ == '__main__':
     else:
         print('No plan was found')
         exit(1)
-
-
-'''
-        Useful functions from planner on github:
-                 parser.actions #likely a set
-                 action.groundify(parser.objects, parser.types) #another set of actions
-                
-                parser.objects
-                parser.types
-
-                act.positive_preconditions
-                    positive_preconditions.issubset(state)
-                act.negative_preconditions
-                    negative_preconditions.isdisjoint(state)
-                
-
-
-                positive = act.add_effects
-                    state.difference(negative)
-                        state.difference(something).union(positive)
-                negative = act.del_effects
-
-                act.difference(negative).union(positive)
-
-
-'''
 
