@@ -3,6 +3,7 @@
 
 from pddl_parser.PDDL import PDDL_Parser
 from pddl_parser.action import Action
+from bfs_planner import BFS_Planner
 import os
 
 class FF_Planner():
@@ -33,24 +34,17 @@ class FF_Planner():
     def solve(self):
         # Initialise solution
         state = set(self.s_0) 
-        h_curr = float('inf') # HOW USE H_MAX TO PRUNE/SET MAX DEPTH??????? 
+        h_curr = float('inf')
         
-        # DO WE NEED BOTH OF THESE????
         action_plan = []
-        action_plan_relaxed = [] #list of sets of actions? or list of list of actions?
+        action_plan_relaxed = []
 
         # Continue performing actions while not in the goal state
-        #i = 0
         while not self.applicable(state, self.s_goal_pos, self.s_goal_neg):
             flag_next_found = False # True if a next possible action has been found
-            #num_actions_poss = 0    # Reset number of actions possible in this state
         
             # Find list of next possible actions (starting with helpful actions)
             actions_ordered = self.ordered_actions(state, action_plan_relaxed)
-
-            #print("ACTIONS ORDERED", (actions_ordered[i] for i in range(len(actions_ordered))))
-            # if i == 1:
-            #     return actions_ordered
 
             # Search through ordered actions (which are already known to be possible)
             for a_dash in actions_ordered:
@@ -59,15 +53,8 @@ class FF_Planner():
                 
 
                 # Find heuristic of next state
-                action_plan_relaxed, h_next = self.relaxed_plan(next_state) #self.solve(next_state, h_curr, True)
-                print(("State:{}\nAction: {}, {}\nhFF: {}").format(next_state, a_dash.name,a_dash.parameters, h_next))
-
-                
-            #     if h_next < h_best:
-            #         h_best = h_next
-            #         a_best = a_dash
-
-            # action_plan.append(a_best)
+                action_plan_relaxed, h_next = self.relaxed_plan(next_state)
+                #print(("State:{}\nAction: {}, {}\nhFF: {}").format(next_state, a_dash.name,a_dash.parameters, h_next))
 
                 # If heuristic of next state is lower than current state, take action - enforced hill climbing
                 if h_next < h_curr:
@@ -77,10 +64,7 @@ class FF_Planner():
                     flag_next_found = True
                     break
             
-            
-            
-            
-            print('---------------------------------------------------------\n')
+            #print('---------------------------------------------------------\n')
 
             if len(actions_ordered) == 0: #and not self.applicable(state, self.s_goal_pos, self.s_goal_neg) - incase goal is dead end?
                 # Reached a dead end - try A* search (unimplemented currently)
@@ -89,13 +73,16 @@ class FF_Planner():
                 action_plan = []
                 break
             elif not flag_next_found:
-                # Plateau reached - perform BFS to get out (unimplemented currently)
-                #state, acts_off_plateau = BFS(state, self.s_goal_pos, self.s_goal_neg, h_curr)
-                #action_plan.append(acts_off_plateau)
                 print('PLATEAU REACHED \n')
-                break # REMOVE BREAK ONCE IMPLEMENTED
+                # Plateau reached - perform BFS to get out
+                bfs_planner = BFS_Planner(frozenset(state), self.s_goal_pos, self.s_goal_neg, self.actions)
+                action_plan_bfs = bfs_planner.solve()
 
-            #i = i+1
+                # Append BFS plan to FF plan
+                for a_bfs in action_plan_bfs:
+                    action_plan.append(a_bfs)
+
+                break
 
         return action_plan
 
@@ -113,7 +100,7 @@ class FF_Planner():
         return action.positive_preconditions.issubset(state_pos) and ((action.negative_preconditions - state_removed).isdisjoint(start_state))
 
 
-    # returns all possible actions for a given state. NO combinations of actions to prevent mutexes for now
+    # returns all possible actions for a given state. NO combinations of actions to prevent mutexes
     def possible_actions(self, state):
         return [a for a in self.actions if self.possible_action(a,state)]
 
@@ -123,15 +110,9 @@ class FF_Planner():
 
 
     # Performs an action on a state and returns the resulting state (replaced apply in BFS example planner)
-    def act(self, state, action): #, relaxed=False):
+    def act(self, state, action):
         s_next = state
-        
-        # Allows this function to be used for ff heuristic
-        #if not relaxed:
         s_next = s_next.difference(action.del_effects)
-        # else:
-        #     s_next.union(not action.del_effects)
-        
         s_next = s_next.union(action.add_effects)
 
         return s_next
@@ -184,7 +165,6 @@ class FF_Planner():
     def relaxed_plan(self, target):
         # Generate relaxed plan
         relaxed_act_record = list()
-        #test = len(relaxed_act_record)
         state = target
         state_removed = set()
 
@@ -287,9 +267,10 @@ if __name__ == '__main__':
 
     # Run on default domain and problem - for project
     dirname = os.path.dirname(__file__)
-    domain = os.path.join(dirname,'domain.pddl') #dinner blocksworld.pddl test_domain.pddl
-    problem = os.path.join(dirname,'problem.pddl') #pb1_dinner pb4_blocksworld.pddl test_problem.pddl
-    verbose = True
+    domain = os.path.join(dirname,'domain.pddl') #dinner blocksworld.pddl domain.pddl
+    problem = os.path.join(dirname,'problem.pddl') #pb1_dinner pb4_blocksworld.pddl problem.pddl
+    verbose = False
+    debug = False
 
     # If arguments are given, replace problem to run on
     if len(sys.argv) > 1:
@@ -308,4 +289,3 @@ if __name__ == '__main__':
     else:
         print('No plan was found')
         exit(1)
-

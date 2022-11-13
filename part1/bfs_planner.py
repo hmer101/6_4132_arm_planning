@@ -179,36 +179,3 @@ if __name__ == '__main__':
             print('No plan was found')
             exit(1)
         print (len(plan))
-
-
-
-
-'''
-
-
-        Useful functions from planner on github:
-                 parser.actions #likely a set
-                 action.groundify(parser.objects, parser.types) #another set of actions
-                
-                parser.objects
-                parser.types
-
-                act.positive_preconditions
-                    positive_preconditions.issubset(state)
-                act.negative_preconditions
-                    negative_preconditions.isdisjoint(state)
-                
-
-
-                positive = act.add_effects
-                    state.difference(negative)
-                        state.difference(something).union(positive)
-                negative = act.del_effects
-
-                act.difference(negative).union(positive)
-
-
-'''
-
-
-

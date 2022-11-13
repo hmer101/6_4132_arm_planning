@@ -60,7 +60,7 @@ Contained in part1 folder.
 
 
 ### Current Issues
-- FF_Planner gives strange results 
-- Doesn't order by helpful actions
+- FF_Planner gives strange results in blocksworld pb4 - oscillates between pickup and putdown 
+- FF doesn't order by helpful actions (implemented but not used)
 
 
