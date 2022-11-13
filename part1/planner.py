@@ -165,8 +165,8 @@ if __name__ == '__main__':
 
     # Run on default domain and problem - for project
     dirname = os.path.dirname(__file__)
-    domain = os.path.join(dirname,'domain.pddl')
-    problem = os.path.join(dirname,'problem.pddl')
+    domain = os.path.join(dirname,'test_domain.pddl')
+    problem = os.path.join(dirname,'test_problem.pddl')
     verbose = True
 
     # If arguments are given, replace problem to run on
