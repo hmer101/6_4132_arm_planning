@@ -5,7 +5,9 @@ import sys
 import argparse
 import numpy as np
 
-sys.path.extend(os.path.abspath(os.path.join(os.getcwd(), d)) for d in ['pddlstream', 'ss-pybullet'])
+
+
+sys.path.extend(os.path.abspath(os.path.join(os.getcwd(), d)) for d in ['../padm-project-2022f/ss-pybullet', '../padm-project-2022f/src']) #'../padm-project-2022f/pddlstream'
 
 from pybullet_tools.utils import set_pose, Pose, Point, Euler, multiply, get_pose, get_point, create_box, set_all_static, WorldSaver, create_plane, COLOR_FROM_NAME, stable_z_on_aabb, pairwise_collision, elapsed_time, get_aabb_extent, get_aabb, create_cylinder, set_point, get_function_name, wait_for_user, dump_world, set_random_seed, set_numpy_seed, get_random_seed, get_numpy_seed, set_camera, set_camera_pose, link_from_name, get_movable_joints, get_joint_name
 from pybullet_tools.utils import CIRCULAR_LIMITS, get_custom_limits, set_joint_positions, interval_generator, get_link_pose, interpolate_poses
@@ -46,6 +48,16 @@ def get_sample_fn(body, joints, custom_limits={}, **kwargs):
         return tuple(next(generator))
     return fn
 
+def steer(start_pose, end_pose, visualize=False):
+    for pose in interpolate_poses(start_pose, end_pose, pos_step_size=0.01):
+            conf = next(closest_inverse_kinematics(world.robot, PANDA_INFO, tool_link, pose, max_time=0.05), None)
+            if conf is None:
+                print('Failure!')
+                wait_for_user()
+                break
+            if visualize:
+                set_joint_positions(world.robot, ik_joints, conf)
+
 def main():
     print('Random seed:', get_random_seed())
     print('Numpy seed:', get_numpy_seed())
@@ -72,13 +84,7 @@ def main():
         ik_joints = get_ik_joints(world.robot, PANDA_INFO, tool_link)
         start_pose = get_link_pose(world.robot, tool_link)
         end_pose = multiply(start_pose, Pose(Point(z=1.0)))
-        for pose in interpolate_poses(start_pose, end_pose, pos_step_size=0.01):
-            conf = next(closest_inverse_kinematics(world.robot, PANDA_INFO, tool_link, pose, max_time=0.05), None)
-            if conf is None:
-                print('Failure!')
-                wait_for_user()
-                break
-            set_joint_positions(world.robot, ik_joints, conf)
+        steer(start_pose, end_pose, visualize=True)
     print("Going to operate the base without collision checking")
     for i in range(100):
         goal_pos = translate_linearly(world, 0.01) # does not do any collision checking!!

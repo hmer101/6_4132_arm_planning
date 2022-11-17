@@ -36,8 +36,14 @@ python3 -B -m pddl_parser.planner domain.pddl problem.pddl -v
 
 **Planner**
 - Only a single action can be taken at a time.
-- 
 
+# Part 2
+## Assumptions
+ - When instructed to pick an item up by the planner, the robot will pick up said item (but it MUST be within a certain range)
+ - Opening the drawer will work much the same way
+## Running
+To run the file, navagate to the `part2` directory, and run `python3 main.py`
+ - For now, this is similar to the minimal_example.py, but we will break it down into pieces and implement an RRT for the motion planning and checking
 
 ## Files
 Contained in part1 folder.
