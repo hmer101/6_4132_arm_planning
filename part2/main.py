@@ -4,6 +4,8 @@ import os
 import sys
 import argparse
 import numpy as np
+from pddl_parser.PDDL import PDDL_Parser
+
 
 sys.path.extend(os.path.abspath(os.path.join(os.getcwd(), d)) for d in ['pddlstream', 'ss-pybullet'])
 
