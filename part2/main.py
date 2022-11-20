@@ -9,7 +9,7 @@ from pddl_parser.PDDL import PDDL_Parser
 
 sys.path.extend(os.path.abspath(os.path.join(os.getcwd(), d)) for d in ['../padm-project-2022f', '../padm-project-2022f/ss-pybullet', '../padm-project-2022f/src']) #'../padm-project-2022f/pddlstream'
 
-from pybullet_tools.utils import set_pose, Pose, Point, Euler, multiply, get_pose, get_point, create_box, set_all_static, WorldSaver, create_plane, COLOR_FROM_NAME, stable_z_on_aabb, pairwise_collision, elapsed_time, get_aabb_extent, get_aabb, create_cylinder, set_point, get_function_name, wait_for_user, dump_world, set_random_seed, set_numpy_seed, get_random_seed, get_numpy_seed, set_camera, set_camera_pose, link_from_name, get_movable_joints, get_joint_name
+from pybullet_tools.utils import set_pose, Pose, Point, Euler, multiply, get_pose, get_point, create_box, set_all_static, WorldSaver, create_plane, COLOR_FROM_NAME, stable_z_on_aabb, pairwise_collision, elapsed_time, get_aabb_extent, get_aabb, create_cylinder, set_point, get_function_name, wait_for_user, dump_world, set_random_seed, set_numpy_seed, get_random_seed, get_numpy_seed, set_camera, set_camera_pose, link_from_name, get_movable_joints, get_joint_name     
 from pybullet_tools.utils import CIRCULAR_LIMITS, get_custom_limits, set_joint_positions, interval_generator, get_link_pose, interpolate_poses
 
 from pybullet_tools.ikfast.franka_panda.ik import PANDA_INFO, FRANKA_URDF
@@ -89,6 +89,9 @@ def get_gripper_position_from_conf(conf):
     # ( (position1, position2, position3), (q1, q2, q3, q4))
     return mypos
 
+#def output_pose():
+#    return get_pose()
+
 
 
 def main():
@@ -116,10 +119,10 @@ def main():
         set_joint_positions(world.robot, world.arm_joints, conf)
         wait_for_user()
         ik_joints = get_ik_joints(world.robot, PANDA_INFO, tool_link)
-        start_pose = get_link_pose(world.robot, tool_link)
+        start_pose = get_link_pose(world, tool_link)
         end_pose = rand_position(start_pose)
         output_config = steer(start_pose, end_pose, world, tool_link, ik_joints, visualize=True)
-        print(f"Position to point {get_gripper_position(world)}")
+        print(f"Position to robot base: {get_pose(world.robot)}")
         if output_config:
             print(f"Movement {output_config} goes to point {get_gripper_position(world)} ok")
 
