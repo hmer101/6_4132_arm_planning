@@ -7,8 +7,6 @@ import numpy as np
 from pddl_parser.PDDL import PDDL_Parser
 
 
-
-
 sys.path.extend(os.path.abspath(os.path.join(os.getcwd(), d)) for d in ['../padm-project-2022f', '../padm-project-2022f/ss-pybullet', '../padm-project-2022f/src']) #'../padm-project-2022f/pddlstream'
 
 from pybullet_tools.utils import set_pose, Pose, Point, Euler, multiply, get_pose, get_point, create_box, set_all_static, WorldSaver, create_plane, COLOR_FROM_NAME, stable_z_on_aabb, pairwise_collision, elapsed_time, get_aabb_extent, get_aabb, create_cylinder, set_point, get_function_name, wait_for_user, dump_world, set_random_seed, set_numpy_seed, get_random_seed, get_numpy_seed, set_camera, set_camera_pose, link_from_name, get_movable_joints, get_joint_name
@@ -63,6 +61,25 @@ def steer(start_pose, end_pose, world, tool_link, ik_joints, visualize=False):
 def rand_position(start_pose):
     return multiply(start_pose, Pose(Point(z=1.0)))
 
+def get_gripper_position(world):
+    # ee = end effector
+    world_from_base = get_link_pose(world.robot, link_from_name(world.robot, PANDA_INFO.base_link))
+    world_from_ee = get_link_pose(world.robot, link_from_name(world.robot, PANDA_INFO.ee_link))
+
+    # outputs the position AND the rotation as tuples with what is presumed to be xyz and quaternions q1-4
+    # ( (position1, position2, position3), (q1, q2, q3, q4))
+    return world_from_ee
+
+def get_gripper_position_from_conf(conf):
+    return False
+    fk_fn = 0#UKNOWN FUNCTION! TRY TO FIND THE FK FUNCTION FOR THE ROBOT
+    #mypos = compute_forward_kinematics(fk_fn, conf)
+    # outputs the position AND the rotation as tuples with what is presumed to be xyz and quaternions q1-4
+    # ( (position1, position2, position3), (q1, q2, q3, q4))
+    return mypos
+
+
+
 def main():
     print('Random seed:', get_random_seed())
     print('Numpy seed:', get_numpy_seed())
@@ -91,8 +108,10 @@ def main():
         start_pose = get_link_pose(world.robot, tool_link)
         end_pose = rand_position(start_pose)
         output_config = steer(start_pose, end_pose, world, tool_link, ik_joints, visualize=True)
-        if conf is not None:
-            print(f"Movement {conf} is ok")
+        print(f"Position to point {get_gripper_position(world)}")
+        if output_config:
+            print(f"Movement {output_config} goes to point {get_gripper_position(world)} ok")
+
         else:
             print("Error! movement failed!")
             wait_for_user()
