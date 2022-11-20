@@ -59,16 +59,27 @@ def steer(start_pose, end_pose, world, tool_link, ik_joints, visualize=False):
     return conf
 
 def rand_position(start_pose):
+
     return multiply(start_pose, Pose(Point(z=1.0)))
 
-def get_gripper_position(world):
+def get_link_position(world, link_name):
     # ee = end effector
-    world_from_base = get_link_pose(world.robot, link_from_name(world.robot, PANDA_INFO.base_link))
-    world_from_ee = get_link_pose(world.robot, link_from_name(world.robot, PANDA_INFO.ee_link))
+    link = link_from_name(world.robot, link_name)
+    world_from_link = get_link_pose(world.robot, link) #check that this is not a relative pose
 
+    link_ex = link_from_name(world.robot, PANDA_INFO.ee_link)
+    link_ex_2 = 'panda_hand'
+
+    #base_link = link_from_name(world.robot, PANDA_INFO.base_link)
+    #world_from_base = get_link_pose(world.robot, base_link)
+    
     # outputs the position AND the rotation as tuples with what is presumed to be xyz and quaternions q1-4
     # ( (position1, position2, position3), (q1, q2, q3, q4))
-    return world_from_ee
+    # get_link_position returns link_state.worldLinkFramePosition, link_state.worldLinkFrameOrientation
+    return world_from_link
+
+def get_gripper_position(world):
+    return get_link_position(world, 'panda_hand')
 
 def get_gripper_position_from_conf(conf):
     return False
