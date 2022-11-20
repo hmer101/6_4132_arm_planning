@@ -64,7 +64,7 @@ def rrt(start, goal_sample, distance_fn, sample_fn, extend_fn, collision_fn, goa
     if not callable(goal_sample):
         g = goal_sample
         goal_sample = lambda: g
-    nodes = [TreeNode(start)]
+    nodes = [(start)]
     for i in irange(max_iterations):
         if elapsed_time(start_time) >= max_time:
             break

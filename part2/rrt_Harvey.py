@@ -2,6 +2,9 @@
 # Note that you can write your code in separate .py files
 # and import them here later if you prefer
 
+import numpy as np
+
+
 # Node class for building a tree
 class Node:
     def __init__(self, position, parent=None):

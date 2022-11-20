@@ -54,11 +54,14 @@ def steer(start_pose, end_pose, world, tool_link, ik_joints, visualize=False):
     for pose in interpolate_poses(start_pose, end_pose, pos_step_size=0.01):
             conf = next(closest_inverse_kinematics(world.robot, PANDA_INFO, tool_link, pose, max_time=0.05), None)
             if conf is None:
-                print('Failure!')
-                wait_for_user()
-                break
+                return False
             if visualize:
+                # Conf is a list with the position (float) of each joint
                 set_joint_positions(world.robot, ik_joints, conf)
+    return conf
+
+def rand_position(start_pose):
+    return multiply(start_pose, Pose(Point(z=1.0)))
 
 def main():
     print('Random seed:', get_random_seed())
@@ -76,6 +79,9 @@ def main():
     print('Arm Joints', [get_joint_name(world.robot, joint) for joint in world.arm_joints])
     sample_fn = get_sample_fn(world.robot, world.arm_joints)
     print("Going to use IK to go from a sample start state to a goal state\n")
+
+
+
     for i in range(2):
         print('Iteration:', i)
         conf = sample_fn()
@@ -83,8 +89,15 @@ def main():
         wait_for_user()
         ik_joints = get_ik_joints(world.robot, PANDA_INFO, tool_link)
         start_pose = get_link_pose(world.robot, tool_link)
-        end_pose = multiply(start_pose, Pose(Point(z=1.0)))
-        steer(start_pose, end_pose, world, tool_link, ik_joints, visualize=True)
+        end_pose = rand_position(start_pose)
+        output_config = steer(start_pose, end_pose, world, tool_link, ik_joints, visualize=True)
+        if conf is not None:
+            print(f"Movement {conf} is ok")
+        else:
+            print("Error! movement failed!")
+            wait_for_user()
+
+    
     print("Going to operate the base without collision checking")
     for i in range(100):
         goal_pos = translate_linearly(world, 0.01) # does not do any collision checking!!
