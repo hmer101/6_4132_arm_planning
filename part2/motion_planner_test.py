@@ -1,6 +1,18 @@
 from motion_planners_caelan.rrt import rrt
 
 
+##################################
+
+def get_distance_fn(weights, difference_fn=get_difference):
+    # TODO: careful with circular joints
+    def fn(q1, q2):
+        diff = np.array(difference_fn(q2, q1))
+        return np.sqrt(np.dot(weights, diff * diff))
+    return fn
+
+
+##############################
+
 def wrap_sample_fn(sample_fn):
     samples = []
 
@@ -111,6 +123,33 @@ def get_collision_fn(environment, obstacles):
     return collision_fn
 
 
+##################################
+
+
+
+def problem1():
+    obstacles = [
+        create_box(center=(.35, .75), extents=(.25, .25)),
+        #create_box(center=(.75, .35), extents=(.25, .25)),
+        create_box(center=(.75, .35), extents=(.22, .22)),
+        create_box(center=(.5, .5), extents=(.25, .25)),
+        #create_box(center=(.5, .5), extents=(.22, .22)),
+
+        create_cylinder(center=(.25, .25), radius=.1),
+    ]
+
+    # TODO: alternate sampling from a mix of regions
+    regions = {
+        'env': create_box(center=(.5, .5), extents=(1., 1.)),
+        'green': create_box(center=(.8, .8), extents=(.1, .1)),
+    }
+    #start = np.array([0., 0.])
+    start = np.array([0.1, 0.1])
+    goal = 'green'
+
+    return start, goal, regions, obstacles
+
+
 
 
 
@@ -126,7 +165,7 @@ if __name__ == '__main__':
 
     # #########################
 
-    # start, goal, regions, obstacles = problem1()
+    # start, goal, regions, obstacles = problem1()     #!!!!!!!!!!!!!!!!!!!!!!!!!
     # #obstacles = []
     # environment = regions['env']
     # if isinstance(goal, str) and (goal in regions):
@@ -142,5 +181,17 @@ if __name__ == '__main__':
     
     rrt(start, goal_sample, distance_fn, sample_fn, extend_fn, collision_fn, goal_test=lambda q: False,
         goal_probability=.2, max_iterations=RRT_ITERATIONS, max_time=INF)
-    
+    #   """
+    # :param start: Start configuration - conf
+    # :param goal_sample: Sample function for sampling from goal region
+    # :param distance_fn: Distance function - distance_fn(q1, q2)->float
+    # :param sample_fn: Sample function - sample_fn()->conf
+    # :param extend_fn: Extension function - extend_fn(q1, q2)->[q', ..., q"]
+    # :param collision_fn: Collision function - collision_fn(q)->bool
+    # :param max_iterations: Maximum number of iterations - int
+    # :param max_time: Maximum runtime - float
+    # :return: Path [q', ..., q"] or None if unable to find a solution
+    # """
+
+
     #print("test")
