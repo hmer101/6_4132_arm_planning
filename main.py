@@ -65,32 +65,39 @@ def steer(start_pose, end_pose, world, tool_link, ik_joints, visualize=False):
     return conf
 
 def rand_position(start_pose):
+
     return multiply(start_pose, Pose(Point(z=1.0)))
 
 
-# def find_base_goal(world):
-#     # Get indigo_drawer_top location - front left point
-#     print("TEST")
-#     #print(world.get_body('sugar_box0'))
-#     #print(world.get_body('sugar_box0'))
-#     #print(world.all_bodies)
+def get_link_position(world, link_name):
+    # ee = end effector
+    link = link_from_name(world.robot, link_name)
+    world_from_link = get_link_pose(world.robot, link) #check that this is not a relative pose
+
+    link_ex = link_from_name(world.robot, PANDA_INFO.ee_link)
+    link_ex_2 = 'panda_hand'
+
+    #base_link = link_from_name(world.robot, PANDA_INFO.base_link)
+    #world_from_base = get_link_pose(world.robot, base_link)
     
-#     #print("DRAWER ABB: ")
-#     drawer_surface =  compute_surface_aabb(world, 'indigo_drawer_top')
-#     #stove_surface = compute_surface_aabb(world, 'front_right_stove')
-#     #print(stove_surface)
+    # outputs the position AND the rotation as tuples with what is presumed to be xyz and quaternions q1-4
+    # ( (position1, position2, position3), (q1, q2, q3, q4))
+    # get_link_position returns link_state.worldLinkFramePosition, link_state.worldLinkFrameOrientation
+    return world_from_link
 
-#     #drawer_body = 0 #world.get_body('kitchen_part_right')
-#     #drawer_link = link_from_name(KITCHEN_BODY,'indigo_drawer_top')
-#     #drawer_pose = get_link_pose(KITCHEN_BODY, drawer_link)
+def get_gripper_position(world):
+    return get_link_position(world, 'panda_hand')
 
-#     #print(drawer_pose)
+def get_gripper_position_from_conf(conf):
+    return False
+    fk_fn = 0#UKNOWN FUNCTION! TRY TO FIND THE FK FUNCTION FOR THE ROBOT
+    #mypos = compute_forward_kinematics(fk_fn, conf)
+    # outputs the position AND the rotation as tuples with what is presumed to be xyz and quaternions q1-4
+    # ( (position1, position2, position3), (q1, q2, q3, q4))
+    return mypos
 
-
-#     print((drawer_surface.lower[0],drawer_surface.upper[1], (drawer_surface.lower[2]+drawer_surface.upper[2])/2)) # Also has all drawer verticies so if have location of drawer, can get absolute position
-#     # Set goal pose to be to the left of the drawer by the base's width to prevent collision when opening the drawer
-
-#     return ()
+#def output_pose():
+#    return get_pose()
 
 
 # ACTION FUNCTIONS
@@ -129,29 +136,26 @@ def main():
     print('Base Joints', [get_joint_name(world.robot, joint) for joint in world.base_joints])
     print('Arm Joints', [get_joint_name(world.robot, joint) for joint in world.arm_joints])
     sample_fn = get_sample_fn(world.robot, world.arm_joints)
-    
     print('Kitchen joints', [get_joint_name(world.kitchen, joint) for joint in world.kitchen_joints])
-
     action_navigate(world)
-    wait_for_user()
-    #print(base_goal_pos)
-    #find_base_goal(world)
-    
-    # print("Going to use IK to go from a sample start state to a goal state\n")
-    # for i in range(2):
-    #     print('Iteration:', i)
-    #     conf = sample_fn()
-    #     set_joint_positions(world.robot, world.arm_joints, conf)
-    #     wait_for_user()
-    #     ik_joints = get_ik_joints(world.robot, PANDA_INFO, tool_link)
-    #     start_pose = get_link_pose(world.robot, tool_link)
-    #     end_pose = rand_position(start_pose)
-    #     output_config = steer(start_pose, end_pose, world, tool_link, ik_joints, visualize=True)
-    #     if conf is not None:
-    #         print(f"Movement {conf} is ok")
-    #     else:
-    #         print("Error! movement failed!")
-    #         wait_for_user()
+
+    print("Going to use IK to go from a sample start state to a goal state\n")
+    for i in range(2):
+        print('Iteration:', i)
+        conf = sample_fn()
+        set_joint_positions(world.robot, world.arm_joints, conf)
+        wait_for_user()
+        ik_joints = get_ik_joints(world.robot, PANDA_INFO, tool_link)
+        start_pose = get_link_pose(world, tool_link)
+        end_pose = rand_position(start_pose)
+        output_config = steer(start_pose, end_pose, world, tool_link, ik_joints, visualize=True)
+        print(f"Position to robot base: {get_pose(world.robot)}")
+        if output_config:
+            print(f"Movement {output_config} goes to point {get_gripper_position(world)} ok")
+
+        else:
+            print("Error! movement failed!")
+            wait_for_user()
 
 if __name__ == '__main__':
     main()
