@@ -65,6 +65,10 @@ Contained in part1 folder.
 - Adding ability to deal with negative goals and negative preconditions of actions as our problem formulation contains 
 
 
+- Finding position of handle and position to move robot base to. "Hardcoded" these locations relative to drawer center.
+- No collision checking when base is moved - movement function and goal position designed for the kitchen such that no collisions will occur
+
+
 ### Current Issues
 - FF_Planner gives strange results in blocksworld pb4 - oscillates between pickup and putdown 
 - FF doesn't order by helpful actions (implemented but not used)
