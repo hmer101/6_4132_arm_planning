@@ -59,7 +59,6 @@ def get_sample_fn(body, joints, custom_limits={}, **kwargs):
 #def get_goal_sample_fn(body, joints, custom_limits={}, **kwargs):
 
 
-
 def steer(start_pose, end_pose, world, tool_link, ik_joints, visualize=False):
     for pose in interpolate_poses(start_pose, end_pose, pos_step_size=0.01):
             conf = next(closest_inverse_kinematics(world.robot, PANDA_INFO, tool_link, pose, max_time=0.05), None)
@@ -112,75 +111,15 @@ def rand_position(start_pose):
     return multiply(start_pose, Pose(Point(z=1.0)))
 
 
-def get_link_position(world, link_name):
-    # ee = end effector
-    link = link_from_name(world.robot, link_name)
-    world_from_link = get_link_pose(world.robot, link) #check that this is not a relative pose
+# def get_link_position(world, link_name):
+#     # ee = end effector
+#     link = link_from_name(world.robot, link_name)
+#     link_pose = get_link_pose(world.robot, link)
 
-    # link_ex = link_from_name(world.robot, PANDA_INFO.ee_link)
-    # link_ex_2 = 'panda_hand'
+#     return link_pose
 
-    #base_link = link_from_name(world.robot, PANDA_INFO.base_link)
-    #world_from_base = get_link_pose(world.robot, base_link)
-    
-    # outputs the position AND the rotation as tuples with what is presumed to be xyz and quaternions q1-4
-    # ( (position1, position2, position3), (q1, q2, q3, q4))
-    # get_link_position returns link_state.worldLinkFramePosition, link_state.worldLinkFrameOrientation
-    return world_from_link
-
-def get_gripper_position(world):
-    return get_link_position(world, 'panda_hand')
-
-def get_gripper_position_from_conf(conf):
-    return False
-    fk_fn = 0#UKNOWN FUNCTION! TRY TO FIND THE FK FUNCTION FOR THE ROBOT
-    #mypos = compute_forward_kinematics(fk_fn, conf)
-    # outputs the position AND the rotation as tuples with what is presumed to be xyz and quaternions q1-4
-    # ( (position1, position2, position3), (q1, q2, q3, q4))
-    return mypos
-
-
-# Get an arm configuration that produces a desired gripper position, from a start pose
-# def get_conf_from_gripper_pos(end_pose, start_pose, world):
-#     tool_link = link_from_name(world.robot, 'panda_hand')
-#     ik_joints = get_ik_joints(world.robot, PANDA_INFO, tool_link)
-
-#     pos1, quat1 = start_pose
-#     pos2, quat2 = end_pose
-
-#     quat = quat_combination(quat1, quat2, fraction=1) #NEED THIS OR 
-#     pose = (pos2, quat)
-#     #pose = end_pose
-#     conf = next(closest_inverse_kinematics(world.robot, PANDA_INFO, tool_link, pose, max_time=2), None)
-#     if conf is None:
-#         print('Failure!')
-
-
-#     soution = sub_inverse_kinematics(world.robot, ik_joints[0], tool_link, end_pose)
-
-#     set_joint_position(body, joint, value)
-
-#     #     def get_joint_position(body, joint):
-# #         return get_joint_state(body, joint).jointPosition
-    
-# #     def set_joint_position(body, joint, value):
-# #         p.resetJointState(body, joint, value, targetVelocity=0, physicsClientId=CLIENT)
-
-#     # Try simulating moving to goal pos until config is found. Make movements in "shadow world"
-    
-
-#     return conf
-
-    #start_pose = get_link_pose(world.robot, tool_link)
-    #end_pose = multiply(start_pose, Pose(Point(z=1.0)))
-
-# def sub_inverse_kinematics(robot, first_joint, target_link, target_pose, **kwargs):
-#     solutions = plan_cartesian_motion(robot, first_joint, target_link, [target_pose], **kwargs)
-#     if solutions:
-#         return solutions[0]
-#     return None
-
-
+# def get_gripper_position(world):
+#     return get_link_position(world, 'panda_hand')
 
 # ACTION FUNCTIONS
 def action_navigate(world):
@@ -222,35 +161,12 @@ def main():
     print('Kitchen joints', [get_joint_name(world.kitchen, joint) for joint in world.kitchen_joints])
     action_navigate(world)
 
-    print("Going to use IK to go from a sample start state to a goal state\n")
-    # for i in range(2):
-    #     print('Iteration:', i)
-    #     conf = sample_fn()
-    #     set_joint_positions(world.robot, world.arm_joints, conf)
-    #     wait_for_user()
-    #     ik_joints = get_ik_joints(world.robot, PANDA_INFO, tool_link)
-    #     start_pose = get_link_pose(world.robot, tool_link)
-    #     end_pose = rand_position(start_pose)
-    #     output_config = steer(start_pose, end_pose, world, tool_link, ik_joints, visualize=True)
-    #     print(f"Position to robot base: {get_pose(world.robot)}")
-    #     if output_config:
-    #         print(f"Movement {output_config} goes to point {get_gripper_position(world)} ok")
-
-    #     else:
-    #         print("Error! movement failed!")
-    #         wait_for_user()
+    #print("Going to use IK to go from a sample start state to a goal state\n")
 
 
     start_pose = get_link_pose(world.robot, tool_link)
     end_pose = rand_position(start_pose)
     #conf = get_conf_from_gripper_pos(end_pose, start_pose, world)
-
-    #get_joint_s
-    tool_pos = get_joint_position(world.robot,)
-
-    #def get_joint_position(body, joint):
-    #return get_joint_state(body, joint).jointPosition
-
 
     # Setup RRT
     sample_fn = get_sample_fn(world.robot, world.arm_joints)
