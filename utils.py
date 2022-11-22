@@ -22,10 +22,11 @@ KITCHEN_BODY = 0
 # Trys to move the arm to the goal. 
 # Returns the output conf if it can, otherwise it returns None
 # AKA Goal sampling
-def goal_sampling(world, goal_pose, reset_at_end = True):
+def goal_sampling(world, start_conf, goal_pose, reset_at_end = True):
     tool_link = link_from_name(world.robot, 'panda_hand')
     ik_joints = get_ik_joints(world.robot, PANDA_INFO, tool_link)
-    start_pose = get_link_pose(world.robot, tool_link)
+    set_joint_positions(world.robot, ik_joints, start_conf)
+    #end_pose = multiply(start_pose, Pose(Point(z=1.0)))
     start_conf = get_joint_positions(world.robot, tool_link)
     conf = None
     for pose in interpolate_poses(start_pose, goal_pose, pos_step_size=0.01):
@@ -38,11 +39,34 @@ def goal_sampling(world, goal_pose, reset_at_end = True):
     return conf
 
 
-'''def config_from_pose(world, pose):
+# Take in only last and new config, use inverse kinematics to get close to new config
+def steer2(world, config_last, config_new):
+    #start_pose = #get_gripper_position_from_conf(config_last)
+    end_pose = get_gripper_position_from_conf(config_new)
+    tool_link = link_from_name(world.robot, 'panda_hand')
+    # Attempt to simulate movement from the last config to the new config
+    for pose in interpolate_poses(start_pose, end_pose, pos_step_size=0.01):
+        conf = next(closest_inverse_kinematics(world.robot, PANDA_INFO, tool_link, pose, max_time=0.05), None)
+        if conf is None:
+            return False
+# Conf is a list with the position (float) of each joint
+        set_joint_positions(world.robot, ik_joints, conf)
+# If no collisions, add this conf to 
+
+
+
+def config_from_pose(world, pose):
     tool_link = link_from_name(world.robot, 'panda_hand')
     ik_joints = get_ik_joints(world.robot, PANDA_INFO, tool_link)
     out_config = next(closest_inverse_kinematics(world.robot, PANDA_INFO, tool_link, pose, max_time=0.05), None)
-    return out_config'''
+    return out_config
+
+def pose_from_config(world, config):
+    tool_link = link_from_name(world.robot, 'panda_hand')
+    ik_joints = get_ik_joints(world.robot, PANDA_INFO, tool_link)
+    set_joint_positions(world.robot, ik_joints, config)
+    tool_pose = get_link_pose(world.robot, tool_link)
+    return tool_pose
 
 
 # Get the position of the indigo drawer handle in the world
