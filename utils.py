@@ -22,7 +22,7 @@ KITCHEN_BODY = 0
 # Trys to move the arm to the goal. 
 # Returns the output conf if it can, otherwise it returns None
 # AKA Goal sampling
-def ik_sampling(world, start_config, end_pose, reset_at_end = True):
+def goal_sampling(world, end_pose, reset_at_end = True):
     tool_link = link_from_name(world.robot, 'panda_hand')
     ik_joints = get_ik_joints(world.robot, PANDA_INFO, tool_link)
     start_pose = get_link_pose(world.robot, tool_link)
@@ -35,8 +35,15 @@ def ik_sampling(world, start_config, end_pose, reset_at_end = True):
             return None
         set_joint_positions(world.robot, ik_joints, conf)
     if reset_at_end:
-        set_joint_positions(world.robot, ik_joints, start_config)
-    return conf, 
+        set_joint_positions(world.robot, ik_joints, start_conf)
+    return conf
+
+
+'''def config_from_pose(world, pose):
+    tool_link = link_from_name(world.robot, 'panda_hand')
+    ik_joints = get_ik_joints(world.robot, PANDA_INFO, tool_link)
+    out_config = next(closest_inverse_kinematics(world.robot, PANDA_INFO, tool_link, pose, max_time=0.05), None)
+    return out_config'''
 
 
 # Get the position of the indigo drawer handle in the world
