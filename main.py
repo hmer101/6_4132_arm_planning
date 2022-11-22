@@ -72,19 +72,21 @@ def steer(start_pose, end_pose, world, tool_link, ik_joints, visualize=False):
 
 
 # Take in only last and new config, use inverse kinematics to get close to new config
-def steer2(world, config_last, config_new):
-    start_pose = get_gripper_position_from_conf(config_last)
-    end_pose = get_gripper_position_from_conf(config_new)
-    tool_link = link_from_name(world.robot, 'panda_hand')
+# def steer2(world, config_last, config_new):
+#     #start_pose = #get_gripper_position_from_conf(config_last)
+#     end_pose = get_gripper_position_from_conf(config_new)
+#     tool_link = link_from_name(world.robot, 'panda_hand')
 
-    # Attempt to simulate movement from the last config to the new config
-    for pose in interpolate_poses(start_pose, end_pose, pos_step_size=0.01):
-            conf = next(closest_inverse_kinematics(world.robot, PANDA_INFO, tool_link, pose, max_time=0.05), None)
-            if conf is None:
-                return False
-            if visualize:
-                # Conf is a list with the position (float) of each joint
-                set_joint_positions(world.robot, ik_joints, conf)
+#     # Attempt to simulate movement from the last config to the new config
+#     for pose in interpolate_poses(start_pose, end_pose, pos_step_size=0.01):
+#         conf = next(closest_inverse_kinematics(world.robot, PANDA_INFO, tool_link, pose, max_time=0.05), None)
+#         if conf is None:
+#             return False
+#         # Conf is a list with the position (float) of each joint
+#         set_joint_positions(world.robot, ik_joints, conf)
+
+#         # If no collisions, add this conf to 
+    
 
     # for i in range(2):
     #     print('Iteration:', i)
@@ -243,6 +245,13 @@ def main():
     end_pose = rand_position(start_pose)
     #conf = get_conf_from_gripper_pos(end_pose, start_pose, world)
 
+    #get_joint_s
+    tool_pos = get_joint_position(world.robot,)
+
+    #def get_joint_position(body, joint):
+    #return get_joint_state(body, joint).jointPosition
+
+
     # Setup RRT
     sample_fn = get_sample_fn(world.robot, world.arm_joints)
     start = TreeNode(get_joint_positions(world.robot, world.arm_joints))
@@ -250,7 +259,7 @@ def main():
 
     ik_joints = get_ik_joints(world.robot, PANDA_INFO, tool_link)
     #set_joint_positions(world.robot, ik_joints, sample.config)
-    # goal_sample = # REMOVED FOR NOW
+    goal_sample = utils.goal_sampling
     distance_fn = get_distance # Give distance of one config away from other  #dist_test = distance_fn(start.config,sample.config)
     extend_fn = (last.config, s)# Function to generate a new configuration based on a new sample and the closest configuration
     #collision_fn = # Function to figure out if the new configuration causes any collisions. Could incorporate into steer????

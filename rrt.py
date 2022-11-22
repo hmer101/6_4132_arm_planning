@@ -39,8 +39,8 @@ def elapsed_time(start_time):
     return time.time() - start_time
 
 
-def rrt(start, distance_fn, sample_fn, extend_fn, collision_fn, goal_test=lambda q: False,
-        goal_probability=.2, max_iterations=20, max_time=float('inf')): #goal_sample - START WITHOUT GOAL SAMPLING
+def rrt(start, goal_sample, world, goal_pose, distance_fn, sample_fn, extend_fn, collision_fn, goal_test=lambda q: False,
+        goal_probability=.2, max_iterations=20, max_time=float('inf')):
     """
     :param start: Start configuration - conf
     :param distance_fn: Distance function - distance_fn(q1, q2)->float
@@ -61,9 +61,15 @@ def rrt(start, distance_fn, sample_fn, extend_fn, collision_fn, goal_test=lambda
     for i in irange(max_iterations):
         if elapsed_time(start_time) >= max_time:
             break
-        #goal = random() < goal_probability or i == 0
-        #s = goal_sample() if goal else 
+        goal = random() < goal_probability or i == 0
+
+        # Sample. Try sampling from goal randomly - return a normal sample if unable to 
         s = sample_fn()
+        
+        if goal:
+            test_sample = goal_sample(world, goal_pose) 
+        
+        #s = sample_fn()(world, end_pose)
 
         last = argmin(lambda n: distance_fn(n.config, s), nodes)
         for q in extend_fn(last.config, s):
