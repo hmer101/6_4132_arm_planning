@@ -61,11 +61,22 @@ def config_from_pose(world, pose):
     out_config = next(closest_inverse_kinematics(world.robot, PANDA_INFO, tool_link, pose, max_time=0.05), None)
     return out_config
 
+
+# WILL NEED TO SIMULATE ON NON-GUI WORLD
 def pose_from_config(world, config):
     tool_link = link_from_name(world.robot, 'panda_hand')
     ik_joints = get_ik_joints(world.robot, PANDA_INFO, tool_link)
+
+    # Get original configuration to allow resetting
+    conf_orig = get_joint_positions(world.robot, ik_joints)
+
+    # Set joint to new position and get tool pose
     set_joint_positions(world.robot, ik_joints, config)
     tool_pose = get_link_pose(world.robot, tool_link)
+
+    # Reset to original config
+    set_joint_positions(world.robot, ik_joints,conf_orig)
+
     return tool_pose
 
 
