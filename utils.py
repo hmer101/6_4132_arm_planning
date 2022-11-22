@@ -22,14 +22,14 @@ KITCHEN_BODY = 0
 # Trys to move the arm to the goal. 
 # Returns the output conf if it can, otherwise it returns None
 # AKA Goal sampling
-def goal_sampling(world, end_pose, reset_at_end = True):
+def goal_sampling(world, goal_pose, reset_at_end = True):
     tool_link = link_from_name(world.robot, 'panda_hand')
     ik_joints = get_ik_joints(world.robot, PANDA_INFO, tool_link)
     start_pose = get_link_pose(world.robot, tool_link)
     #end_pose = multiply(start_pose, Pose(Point(z=1.0)))
     start_conf = get_joint_positions(world.robot, tool_link)
     conf = None
-    for pose in interpolate_poses(start_pose, end_pose, pos_step_size=0.01):
+    for pose in interpolate_poses(start_pose, goal_pose, pos_step_size=0.01):
         conf = next(closest_inverse_kinematics(world.robot, PANDA_INFO, tool_link, pose, max_time=0.05), None)
         if conf is None:
             return None
