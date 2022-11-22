@@ -4,17 +4,40 @@ import os
 import sys
 
 sys.path.extend(os.path.abspath(os.path.join(os.getcwd(), 'padm-project=2022f', d)) for d in ['pddlstream', 'ss-pybullet'])
-
+sys.path.extend('pybullet')
 import gitmodules
 __import__('padm-project-2022f') 
 
-from pybullet_tools.utils import  link_from_name
+from pybullet_tools.utils import  link_from_name, multiply, Pose, Point, interpolate_poses, set_joint_positions
 from pybullet_tools.utils import get_link_pose, get_joint_positions, get_distance, get_angle
+from pybullet_tools.ikfast.franka_panda.ik import PANDA_INFO, FRANKA_URDF
+from pybullet_tools.ikfast.ikfast import get_ik_joints, closest_inverse_kinematics
 
 from src.world import World
 from src.utils import compute_surface_aabb
 
 KITCHEN_BODY = 0
+
+
+# Trys to move the arm to the goal. 
+# Returns the output conf if it can, otherwise it returns None
+# AKA Goal sampling
+def ik_sampling(world, start_config, end_pose, reset_at_end = True):
+    tool_link = link_from_name(world.robot, 'panda_hand')
+    ik_joints = get_ik_joints(world.robot, PANDA_INFO, tool_link)
+    start_pose = get_link_pose(world.robot, tool_link)
+    #end_pose = multiply(start_pose, Pose(Point(z=1.0)))
+    start_conf = get_joint_positions(world.robot, tool_link)
+    conf = None
+    for pose in interpolate_poses(start_pose, end_pose, pos_step_size=0.01):
+        conf = next(closest_inverse_kinematics(world.robot, PANDA_INFO, tool_link, pose, max_time=0.05), None)
+        if conf is None:
+            return None
+        set_joint_positions(world.robot, ik_joints, conf)
+    if reset_at_end:
+        set_joint_positions(world.robot, ik_joints, start_config)
+    return conf, 
+
 
 # Get the position of the indigo drawer handle in the world
 def get_handle_position(world):
