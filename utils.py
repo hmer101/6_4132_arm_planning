@@ -9,7 +9,7 @@ import gitmodules
 __import__('padm-project-2022f') 
 
 from pybullet_tools.utils import  link_from_name, multiply, Pose, Point, interpolate_poses, set_joint_positions
-from pybullet_tools.utils import get_link_pose, get_joint_positions, get_distance, get_angle
+from pybullet_tools.utils import get_link_pose, get_joint_positions, get_distance, get_angle, clone_body
 from pybullet_tools.ikfast.franka_panda.ik import PANDA_INFO, FRANKA_URDF
 from pybullet_tools.ikfast.ikfast import get_ik_joints, closest_inverse_kinematics
 
@@ -19,63 +19,60 @@ from src.utils import compute_surface_aabb
 KITCHEN_BODY = 0
 
 
-# Trys to move the arm to the goal. 
-# Returns the output conf if it can, otherwise it returns None
-# AKA Goal sampling
-def goal_sampling(world, start_conf, goal_pose, reset_at_end = True):
-    tool_link = link_from_name(world.robot, 'panda_hand')
-    ik_joints = get_ik_joints(world.robot, PANDA_INFO, tool_link)
-    set_joint_positions(world.robot, ik_joints, start_conf)
-    #end_pose = multiply(start_pose, Pose(Point(z=1.0)))
-    start_conf = get_joint_positions(world.robot, tool_link)
-    conf = None
-    for pose in interpolate_poses(start_pose, goal_pose, pos_step_size=0.01):
-        conf = next(closest_inverse_kinematics(world.robot, PANDA_INFO, tool_link, pose, max_time=0.05), None)
-        if conf is None:
-            return None
-        set_joint_positions(world.robot, ik_joints, conf)
-    if reset_at_end:
-        set_joint_positions(world.robot, ik_joints, start_conf)
-    return conf
+#### TO FIX/IMPLEMENT
+# def steer(start_pose, end_pose, world, tool_link, ik_joints, visualize=False):
+#     for pose in interpolate_poses(start_pose, end_pose, pos_step_size=0.01):
+#             conf = next(closest_inverse_kinematics(world.robot, PANDA_INFO, tool_link, pose, max_time=0.05), None)
+#             if conf is None:
+#                 return False
+#             if visualize:
+#                 # Conf is a list with the position (float) of each joint
+#                 set_joint_positions(world.robot, ik_joints, conf)
+#     return conf
 
+# TO FIX -> Don't use inverse kinematics???????
+# def config_from_pose(robot_body, pose):
+#     tool_link = link_from_name(robot_body, 'panda_hand')
+#     ik_joints = get_ik_joints(robot_body, PANDA_INFO, tool_link)
+#     out_config = next(closest_inverse_kinematics(robot_body, PANDA_INFO, tool_link, pose, max_time=0.05), None)
 
-# Take in only last and new config, use inverse kinematics to get close to new config
-def steer2(world, config_last, config_new):
-    #start_pose = #get_gripper_position_from_conf(config_last)
-    end_pose = get_gripper_position_from_conf(config_new)
-    tool_link = link_from_name(world.robot, 'panda_hand')
-    # Attempt to simulate movement from the last config to the new config
-    for pose in interpolate_poses(start_pose, end_pose, pos_step_size=0.01):
-        conf = next(closest_inverse_kinematics(world.robot, PANDA_INFO, tool_link, pose, max_time=0.05), None)
-        if conf is None:
-            return False
-# Conf is a list with the position (float) of each joint
-        set_joint_positions(world.robot, ik_joints, conf)
-# If no collisions, add this conf to 
+#     return out_config
 
+# NOT YET WORKING!!!!
+def config_from_tool_pose(robot_body, arm_joints, pose):
+    # Clone body to find config from pose
+    #test_body = clone_body(robot_body, links=arm_joints, collision=True, visual=False, client=None)
+    
+    tool_link = link_from_name(robot_body, 'panda_hand')
+    ik_joints = get_ik_joints(robot_body, PANDA_INFO, tool_link)
 
+    out_config = False
 
-def config_from_pose(world, pose):
-    tool_link = link_from_name(world.robot, 'panda_hand')
-    ik_joints = get_ik_joints(world.robot, PANDA_INFO, tool_link)
-    out_config = next(closest_inverse_kinematics(world.robot, PANDA_INFO, tool_link, pose, max_time=0.05), None)
     return out_config
 
 
-# WILL NEED TO SIMULATE ON NON-GUI WORLD
-def pose_from_config(world, config):
-    tool_link = link_from_name(world.robot, 'panda_hand')
-    ik_joints = get_ik_joints(world.robot, PANDA_INFO, tool_link)
+def interpolate_configs(start_config, end_config, config_step_size=0.01):
+    return
+
+
+
+
+#### ALL BELOW ARE TESTED AND WORKING
+
+# Find the pose of the tool from a given config 
+def tool_pose_from_config(robot_body, config):
+    tool_link = link_from_name(robot_body, 'panda_hand')
+    ik_joints = get_ik_joints(robot_body, PANDA_INFO, tool_link)
 
     # Get original configuration to allow resetting
-    conf_orig = get_joint_positions(world.robot, ik_joints)
+    conf_orig = get_joint_positions(robot_body, ik_joints)
 
     # Set joint to new position and get tool pose
-    set_joint_positions(world.robot, ik_joints, config)
-    tool_pose = get_link_pose(world.robot, tool_link)
+    set_joint_positions(robot_body, ik_joints, config)
+    tool_pose = get_link_pose(robot_body, tool_link)
 
     # Reset to original config
-    set_joint_positions(world.robot, ik_joints,conf_orig)
+    set_joint_positions(robot_body, ik_joints,conf_orig)
 
     return tool_pose
 

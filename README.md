@@ -74,3 +74,26 @@ Contained in part1 folder.
 - FF doesn't order by helpful actions (implemented but not used)
 
 
+TODO part 2:
+interpolate_configs (in utils) - for making smooth movements between 
+- implement (inspired by interpolate_positions)
+- uncomment in extend
+
+follow_configs
+- Take config list returned from RRT, interpolate with interpolate_configs, execute
+
+
+
+Collision fxn
+- Detect collisions with self (robot arm)
+- Test if current collision method works with spam box and sugar bag
+
+
+Goal sampling fxn
+- Need some way of generating a config from a (goal) pose (config_from_tool_pose) - waiting on Piazza response
+- 
+
+rrt
+- add in goal checking and remove visualization (at end)
+- remove un-needed parameters in rrt and un-needed imports (at end)
+

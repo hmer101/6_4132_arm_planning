@@ -1,5 +1,20 @@
 from random import random
 import time
+import utils
+
+from pybullet_tools.utils import set_joint_positions, interval_generator, get_custom_limits, CIRCULAR_LIMITS, get_distance, link_from_name, get_joint_positions, single_collision
+
+from pybullet_tools.ikfast.franka_panda.ik import PANDA_INFO
+from pybullet_tools.ikfast.ikfast import get_ik_joints
+
+#REMOVE later
+import sys
+import os
+sys.path.extend(os.path.abspath(os.path.join(os.getcwd(), 'padm-project=2022f', d)) for d in ['pddlstream', 'ss-pybullet'])
+
+import gitmodules
+__import__('padm-project-2022f') 
+
 
 class TreeNode(object):
 
@@ -39,7 +54,86 @@ def elapsed_time(start_time):
     return time.time() - start_time
 
 
-def rrt(start, goal_sample, world, goal_pose, distance_fn, sample_fn, extend_fn, collision_fn, goal_test=lambda q: False,
+
+## RRT FUNCTIONS FOR ARM
+
+# Trys to move the arm to the goal. 
+# Returns the output conf if it can, otherwise it returns None
+# AKA Goal sampling
+# FIX SO NOT USING INVERSE KINEMATICS
+# def goal_sampling(world, start_conf, goal_pose, reset_at_end = True):
+#     tool_link = link_from_name(world.robot, 'panda_hand')
+#     ik_joints = get_ik_joints(world.robot, PANDA_INFO, tool_link)
+#     set_joint_positions(world.robot, ik_joints, start_conf)
+#     #end_pose = multiply(start_pose, Pose(Point(z=1.0)))
+#     start_conf = get_joint_positions(world.robot, tool_link)
+#     conf = None
+#     for pose in interpolate_poses(start_pose, goal_pose, pos_step_size=0.01):
+#         conf = next(closest_inverse_kinematics(world.robot, PANDA_INFO, tool_link, pose, max_time=0.05), None)
+#         if conf is None:
+#             return None
+#         set_joint_positions(world.robot, ik_joints, conf)
+#     if reset_at_end:
+#         set_joint_positions(world.robot, ik_joints, start_conf)
+#     return conf
+
+# Returns a function for sampling the arm config space
+def get_sample_fn(body, joints, custom_limits={}, **kwargs):
+    lower_limits, upper_limits = get_custom_limits(body, joints, custom_limits, circular_limits=CIRCULAR_LIMITS)
+    generator = interval_generator(lower_limits, upper_limits, **kwargs)
+    def fn():
+        return tuple(next(generator))
+    return fn
+
+# Tests if the current position is within a certain radius of the desired position
+def goal_test_pos(current_pos, goal_pos, radius=0.5):
+    if get_distance(current_pos, goal_pos) <= radius:
+        return True
+    else:
+        return False
+
+# Extend function to extend the last configuration to the new configuration
+def extend(config_last, config_new):
+    #return interpolate_configs(config_new)
+    return [config_new]
+
+
+# Function to allow collision detection between robot arm and the environment
+def detect_collision(robot_body, config):
+    collision = False
+    
+    tool_link = link_from_name(robot_body, 'panda_hand')
+    ik_joints = get_ik_joints(robot_body, PANDA_INFO, tool_link)
+
+    # Get original configuration to allow resetting
+    conf_orig = get_joint_positions(robot_body, ik_joints)
+
+    # Temporarily set to test configuration to test collisions
+    set_joint_positions(robot_body, ik_joints, config)
+
+    # Check collisions
+    if single_collision(robot_body) == True:    # Collision with any bodies in world
+        collision = True
+    
+    # SELF COLLISIONS
+    #elif link_pairs_collision(robot_body, get_links(robot_body), robot_body, get_links(robot_body)): #pairwise_collision(robot_body, robot_body) == True: # Collision with self
+     #   collision = True
+        
+    # Reset to original config
+    set_joint_positions(robot_body, ik_joints,conf_orig)
+
+    return collision 
+
+
+## RRT
+
+
+# Performs RRT from start to a goal pos
+# Note that this returns the configuration sequence to traverse from the start to the goal but does not visualise this 
+# (need to do something like set_joint_positions(interpolate_configs(configs)) on return)
+
+# REMOVE: world, obstacles, goal_pose or goal_sample?
+def rrt(world, robot_body, obstacles, start, goal_pose, goal_sample, distance_fn, sample_fn, extend_fn, collision_fn, goal_test=lambda q: False,
         goal_probability=.2, max_iterations=20, max_time=float('inf')):
     """
     :param start: Start configuration - conf
@@ -52,7 +146,7 @@ def rrt(start, goal_sample, world, goal_pose, distance_fn, sample_fn, extend_fn,
     :return: Path [q', ..., q"] or None if unable to find a solution
     """
     start_time = time.time()
-    if collision_fn(start):
+    if collision_fn(robot_body, start.config):
         return None
     # if not callable(goal_sample):
     #     g = goal_sample
@@ -64,20 +158,28 @@ def rrt(start, goal_sample, world, goal_pose, distance_fn, sample_fn, extend_fn,
         goal = random() < goal_probability or i == 0
 
         # Sample. Try sampling from goal randomly - return a normal sample if unable to 
+        #s = goal_sample() if goal else sample_fn()
         s = sample_fn()
-        
-        if goal:
-            test_sample = goal_sample(world, goal_pose) 
-        
-        #s = sample_fn()(world, end_pose)
+        # if goal:
+        #     test_sample = goal_sample(world, goal_pose) 
 
+        #     if test_sample != None:
+        #         s = test_sample
+
+        #         # 
+
+        # Find closest config in tree to new sample config and extend from closest config to 
         last = argmin(lambda n: distance_fn(n.config, s), nodes)
         for q in extend_fn(last.config, s):
-            if collision_fn(q):
+            if collision_fn(robot_body, q):
                 break
             last = TreeNode(q, parent=last)
             nodes.append(last)
-            if goal_test(last.config):
+
+            # Temporarily visualise RRT functioning
+            set_joint_positions(robot_body, world.arm_joints, last.config)
+
+            if goal_test(utils.tool_pose_from_config(robot_body, last.config)[0],goal_pose[0]):
                 return configs(last.retrace())
         # else:
         #     if goal:
