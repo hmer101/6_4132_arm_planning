@@ -94,8 +94,8 @@ def goal_test_pos(current_pos, goal_pos, radius=0.5):
 
 # Extend function to extend the last configuration to the new configuration
 def extend(config_last, config_new):
-    #return interpolate_configs(config_new)
-    return [config_new]
+    return utils.interpolate_configs(config_last, config_new)
+    #return [config_new]
 
 
 # Function to allow collision detection between robot arm and the environment
