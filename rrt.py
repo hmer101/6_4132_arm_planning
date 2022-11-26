@@ -143,7 +143,7 @@ def detect_collision(robot_body, config):
 
 # REMOVE: world, obstacles, goal_pose or goal_sample?
 def rrt(world, robot_body, obstacles, start, goal_pose, goal_sample, distance_fn, sample_fn, extend_fn, collision_fn, goal_test=lambda q: False,
-        goal_probability=.2, max_iterations=20, max_time=float('inf'), visualize=False):
+        goal_probability=.2, max_iterations=20, max_time=float('inf'), visualize=True):
     """
     :param start: Start configuration - conf
     :param distance_fn: Distance function - distance_fn(q1, q2)->float
@@ -155,6 +155,8 @@ def rrt(world, robot_body, obstacles, start, goal_pose, goal_sample, distance_fn
     :return: Path [q', ..., q"] or None if unable to find a solution
     """
     start_time = time.time()
+    goal_sampling_time = 0.5
+    max_goal_sampling_time = 3
     if collision_fn(robot_body, start.config):
         return None
     # if not callable(goal_sample):
@@ -173,11 +175,16 @@ def rrt(world, robot_body, obstacles, start, goal_pose, goal_sample, distance_fn
             # Pick a random node: NOTE: TRY TO ONLY PICK CLOSEST NODES THAT HAVEN'T BEEN PICKED YET
             random_node = nodes[int(random()*len(nodes))]
             # Add dynamic goal sampling time (ex: number of times a node was selected increases goal sampling time)
-            goal_sampling_time = 0.2
+            
 
-            test_conf = goal_sampling(world, random_node.config, goal_pose, max_time=goal_sampling_time)
+            #test_conf = goal_sampling(world, random_node.config, goal_pose, max_time=goal_sampling_time)
+            test_conf = utils.config_from_pose(robot_body, goal_pose, max_time=goal_sampling_time)
+
             if test_conf == None:
+                goal_sampling_time = min(max_goal_sampling_time, 1.2*goal_sampling_time)
+                print(f"new goal_sampling_time={goal_sampling_time}")
                 continue
+            print("Goal conf found!")
             s = test_conf
 
 
