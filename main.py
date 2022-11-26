@@ -101,7 +101,7 @@ def main():
     # Setup RRT
     sample_fn = rrt.get_sample_fn(world.robot, world.arm_joints)
     start = rrt.TreeNode(get_joint_positions(world.robot, world.arm_joints))
-    goal_sample = None   #utils.goal_sampling # TO FIX!!!
+    goal_sample = rrt.goal_sampling 
     distance_fn = get_distance # Give distance of one config away from other  #dist_test = distance_fn(start.config,sample.config)
     extend_fn = rrt.extend # Function to generate a new configuration based on a new sample and the closest configuration
     goal_test_fn = rrt.goal_test_pos

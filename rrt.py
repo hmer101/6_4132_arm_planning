@@ -5,7 +5,7 @@ import utils
 from pybullet_tools.utils import set_joint_positions, interval_generator, get_custom_limits, CIRCULAR_LIMITS, get_distance, link_from_name, get_joint_positions, single_collision
 
 from pybullet_tools.ikfast.franka_panda.ik import PANDA_INFO
-from pybullet_tools.ikfast.ikfast import get_ik_joints
+from pybullet_tools.ikfast.ikfast import get_ik_joints, closest_inverse_kinematics
 
 #REMOVE later
 import sys
@@ -77,6 +77,15 @@ def elapsed_time(start_time):
 #         set_joint_positions(world.robot, ik_joints, start_conf)
 #     return conf
 
+def goal_sampling(world, start_conf, goal_pose, max_time=0.2):
+    tool_link = link_from_name(world.robot, 'panda_hand')
+    ik_joints = get_ik_joints(world.robot, PANDA_INFO, tool_link)
+    set_joint_positions(world.robot, ik_joints, start_conf)
+    conf = next(closest_inverse_kinematics(world.robot, PANDA_INFO, tool_link, goal_pose, max_time=max_time), None)
+    set_joint_positions(world.robot, ik_joints, start_conf)
+    return conf
+    
+
 # Returns a function for sampling the arm config space
 def get_sample_fn(body, joints, custom_limits={}, **kwargs):
     lower_limits, upper_limits = get_custom_limits(body, joints, custom_limits, circular_limits=CIRCULAR_LIMITS)
@@ -134,7 +143,7 @@ def detect_collision(robot_body, config):
 
 # REMOVE: world, obstacles, goal_pose or goal_sample?
 def rrt(world, robot_body, obstacles, start, goal_pose, goal_sample, distance_fn, sample_fn, extend_fn, collision_fn, goal_test=lambda q: False,
-        goal_probability=.2, max_iterations=20, max_time=float('inf')):
+        goal_probability=.2, max_iterations=20, max_time=float('inf'), visualize=False):
     """
     :param start: Start configuration - conf
     :param distance_fn: Distance function - distance_fn(q1, q2)->float
@@ -160,27 +169,43 @@ def rrt(world, robot_body, obstacles, start, goal_pose, goal_sample, distance_fn
         # Sample. Try sampling from goal randomly - return a normal sample if unable to 
         #s = goal_sample() if goal else sample_fn()
         s = sample_fn()
-        # if goal:
-        #     test_sample = goal_sample(world, goal_pose) 
+        if goal:
+            # Pick a random node: NOTE: TRY TO ONLY PICK CLOSEST NODES THAT HAVEN'T BEEN PICKED YET
+            random_node = nodes[int(random()*len(nodes))]
+            # Add dynamic goal sampling time (ex: number of times a node was selected increases goal sampling time)
+            goal_sampling_time = 0.2
 
-        #     if test_sample != None:
-        #         s = test_sample
+            test_conf = goal_sampling(world, random_node.config, goal_pose, max_time=goal_sampling_time)
+            if test_conf == None:
+                continue
+            s = test_conf
+
 
         #         # 
 
         # Find closest config in tree to new sample config and extend from closest config to 
         last = argmin(lambda n: distance_fn(n.config, s), nodes)
-        for q in extend_fn(last.config, s):
-            if collision_fn(robot_body, q):
-                break
-            last = TreeNode(q, parent=last)
-            nodes.append(last)
+        configs = extend_fn(last.config, s)
 
+        valid = True
+        for q in configs:
+            if collision_fn(robot_body, q):
+                valid = False
+                break
+
+            if visualize:
             # Temporarily visualise RRT functioning
-            set_joint_positions(robot_body, world.arm_joints, last.config)
+                set_joint_positions(robot_body, world.arm_joints, last.config)
 
             if goal_test(utils.tool_pose_from_config(robot_body, last.config)[0],goal_pose[0]):
                 return configs(last.retrace())
+        
+        
+        if valid:
+            last = TreeNode(configs[len(configs)-1], parent=last)
+            nodes.append(last)
+
+
         # else:
         #     if goal:
         #         return configs(last.retrace())
