@@ -51,8 +51,12 @@ def config_from_tool_pose(robot_body, arm_joints, pose):
     return out_config
 
 
+# converted this function from a generator to returning a list
 def interpolate_configs(start_config, end_config, config_step_size=0.01):
-    return
+    num_steps = int(math.ceil(get_distance(start_config, end_config)/config_step_size))
+    configs = [ (1-(float(i)/num_steps))*np.array(start_config) + (float(i)/num_steps)*np.array(end_config) for i in range(num_steps) ]
+    return configs
+    
 
 
 
