@@ -85,11 +85,15 @@ def get_handle_position(world):
 
     # Add drawer dimensions for handle pose
     drawer_surface =  compute_surface_aabb(world, 'indigo_drawer_top')
-    handle_pose = (list(drawer_pose[0]), list(drawer_pose[1])) #Note not a deep copy as drawer pose thrown away
-    handle_pose[0][0] = float(drawer_surface.upper[0]) #handle_pose[0][0] +
+    handle_q = [0,0,1,0] #list(drawer_pose[1])
+    handle_pose = (list(drawer_pose[0]), handle_q) #Note not a deep copy as drawer pose thrown away
+    handle_pose[0][0] = float(drawer_surface.upper[0]) + 0.1 #handle_pose[0][0] +
+    handle_pose[0][2] = handle_pose[0][2] - 0.1
+    #handle_pose[1] = [0,0,0,1] 
     handle_pose = (tuple(handle_pose[0]), tuple(handle_pose[1]))
+    #handle_pose[0][]
 
-    return handle_pose[0]
+    return handle_pose
 
 
 
@@ -105,7 +109,7 @@ def get_base_goal_position(world):
     # Add drawer and robot dimensions for left edge
     drawer_surface =  compute_surface_aabb(world, 'indigo_drawer_top')
     goal_position = list(drawer_pose[0]) # Note not a deep copy as drawer pose thrown away
-    goal_position[0] = float(drawer_surface.upper[0]) + 0.2 #approximate robot width = 0.2                 
+    goal_position[0] = float(drawer_surface.upper[0]) + 0.4 #approximate robot width = 0.2                 
     goal_position[1] = float(drawer_surface.lower[1]) - 0.2 
 
     return tuple(goal_position[0:2])

@@ -85,7 +85,7 @@ follow_configs
 
 
 Collision fxn
-- Detect collisions with self (robot arm)
+- Detect collisions with self (robot arm). Maybe have to do this by intersecting surfaces around links? Maybe some built-in functions to help? Look at current collision function for where self-collision checking fits in and methods already tried.
 - Test if current collision method works with spam box and sugar bag
 
 
