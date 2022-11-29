@@ -193,9 +193,22 @@ def main():
     wait_for_user()
     utils.open_drawer(world)
 
-    print("Did 2nd move")
-    wait_for_user()
-    
+
+    # Test "in hand"
+    item_in_hand = world.body_from_name['potted_meat_can1']
+    utils.move(world, [conf_goal], item_in_hand, sleep_time=0.005)
+
+    # # Visualise moving to goal
+    # print(f"\n\nFound goal config! = {conf_goal}")
+    # for conf in utils.interpolate_configs(start_config, conf_goal):
+    #     set_joint_positions(world.robot, ik_joints, conf)
+    #     set_pose(item_in_hand, get_link_pose(world.robot, tool_link))
+    #     time.sleep(0.005)
+    # print("At goal config")
+    # wait_for_user()
+
+
+
 
     '''
     print("Did first move")

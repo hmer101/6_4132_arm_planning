@@ -9,7 +9,7 @@ import gitmodules
 __import__('padm-project-2022f') 
 
 from pybullet_tools.utils import  link_from_name, multiply, Pose, Point, interpolate_poses, set_joint_positions
-from pybullet_tools.utils import get_link_pose, get_joint_positions, get_distance, get_angle, clone_body, get_body_info, get_pose
+from pybullet_tools.utils import get_link_pose, get_joint_positions, get_distance, get_angle, clone_body, get_body_info, get_pose, set_pose
 from pybullet_tools.ikfast.franka_panda.ik import PANDA_INFO, FRANKA_URDF
 from pybullet_tools.ikfast.ikfast import get_ik_joints, closest_inverse_kinematics
 from pybullet_tools.transformations import quaternion_from_euler, euler_from_quaternion
@@ -196,6 +196,10 @@ def move(world, end_confs, sleep_time=0.005):
         for conf in interpolate_configs(start_conf, confs):
             time.sleep(sleep_time)
             set_joint_positions(world.robot, ik_joints, conf)
+
+            if not item_in_hand == None:
+                set_pose(item_in_hand, get_link_pose(world.robot, tool_link))
+
     return get_joint_positions(world.robot, world.arm_joints)
 
 # Get the pose of an object in the world, modifying the orientation for the gripper
