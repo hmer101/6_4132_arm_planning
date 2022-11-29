@@ -8,13 +8,13 @@ sys.path.extend('pybullet')
 import gitmodules
 __import__('padm-project-2022f') 
 
-from pybullet_tools.utils import  link_from_name, multiply, Pose, Point, interpolate_poses, set_joint_positions
-from pybullet_tools.utils import get_link_pose, get_joint_positions, get_distance, get_angle, clone_body, get_body_info, get_pose, set_pose
+from pybullet_tools.utils import  link_from_name, multiply, Pose, Point, interpolate_poses, set_joint_positions, set_joint_position
+from pybullet_tools.utils import get_link_pose, get_joint_position, get_joint_positions, get_distance, get_angle, clone_body, get_body_info, get_pose, set_pose
 from pybullet_tools.ikfast.franka_panda.ik import PANDA_INFO, FRANKA_URDF
 from pybullet_tools.ikfast.ikfast import get_ik_joints, closest_inverse_kinematics
 from pybullet_tools.transformations import quaternion_from_euler, euler_from_quaternion
 from src.world import World
-from src.utils import compute_surface_aabb
+from src.utils import compute_surface_aabb, open_surface_joints, surface_from_name, joint_from_name, Surface
 import rrt
 import time
 KITCHEN_BODY = 0
@@ -135,15 +135,34 @@ def pose_change_orient(orig_pose, new_orient):
 
 def move(world, end_confs, item_in_hand=None, sleep_time=0.005):
     tool_link = link_from_name(world.robot, 'panda_hand')
-    start_conf = joint_poses_initial = get_joint_positions(world.robot, world.arm_joints)
+    start_conf = get_joint_positions(world.robot, world.arm_joints)
     ik_joints = get_ik_joints(world.robot, PANDA_INFO, tool_link)
+
+    tool_init_pose = get_link_pose(world.robot, tool_link)
+
     for confs in end_confs:
         for conf in interpolate_configs(start_conf, confs):
             time.sleep(sleep_time)
+
+            # Set position of robot arm
             set_joint_positions(world.robot, ik_joints, conf)
 
-            if not item_in_hand == None:
-                set_pose(item_in_hand, get_link_pose(world.robot, tool_link))
+            # Get current pose of robot hand
+            tool_pose_current = get_link_pose(world.robot, tool_link)
+
+            if type(item_in_hand) == Surface:
+                #surface_name = 'indigo_drawer_top'
+                #surface = surface_from_name(surface_name)
+                drawer_joint = joint_from_name(world.kitchen,item_in_hand.joints[0])
+                #joint_position = get_joint_position(int(KITCHEN_BODY),drawer_joint)
+                set_joint_position(int(KITCHEN_BODY), drawer_joint, tool_pose_current[0][0] - tool_init_pose[0][0])
+
+                # world.open_door(drawer_link)
+                # #open_surface_joints(world, 'indigo_drawer_top')
+
+            # Set position of other object in robot hand
+            elif not item_in_hand == None:
+                set_pose(item_in_hand, tool_pose_current)
 
     return get_joint_positions(world.robot, world.arm_joints)
 
