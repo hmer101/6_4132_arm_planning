@@ -106,7 +106,7 @@ def get_handle_position(world):
     return handle_pose
 
 
-def get_goal_config(world, start_config, end_pose, goal_radius=0.2, pose_step_size = 0.01, visualize=False):
+def get_goal_config(world, start_config, end_pose, goal_radius=0.2, pose_step_size = 0.025, visualize=False):
     tool_link = link_from_name(world.robot, 'panda_hand')
     ik_joints = get_ik_joints(world.robot, PANDA_INFO, tool_link)
 
@@ -116,7 +116,7 @@ def get_goal_config(world, start_config, end_pose, goal_radius=0.2, pose_step_si
     start_pose = tool_pose_from_config(world.robot, start_config)
     # set the joints to the starting config
     for pose in interpolate_poses(start_pose, end_pose, pos_step_size=pose_step_size):
-            conf = next(closest_inverse_kinematics(world.robot, PANDA_INFO, tool_link, pose, max_time=0.05), None)
+            conf = next(closest_inverse_kinematics(world.robot, PANDA_INFO, tool_link, pose, max_time=0.025), None)
             if rrt.goal_test_pos(pose[0], end_pose[0], radius=goal_radius):
                 return conf
             if visualize:

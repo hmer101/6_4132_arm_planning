@@ -186,24 +186,15 @@ def main():
     #end_pose = multiply(start_pose, Pose(Point(z=1.0)))
     end_pose = utils.get_handle_position(world)
 
-    start_radius = 0.5
-    final_radius = 0.1
-    radius_step = 0.05
-    radius=start_radius
-
-    joint_poses_initial = get_joint_positions(world.robot, world.arm_joints)
+    start_config = get_joint_positions(world.robot, world.arm_joints)
     
     obj_pos_meat = utils.get_pose_obj_goal(world, 'potted_meat_can1') 
     obj_pos_sugar = utils.get_pose_obj_goal(world, 'sugar_box0')
 
-    start_config = joint_poses_initial
     conf_goal = utils.get_goal_config(world, start_config, end_pose)
-    #start_pos_robot = get_joint_positions(world.robot, world.arm_joints)
 
     print(f"\n\nFound goal config! = {conf_goal}")
-    for conf in utils.interpolate_configs(start_config, conf_goal):
-        set_joint_positions(world.robot, ik_joints, conf)
-        time.sleep(0.005)
+    utils.move(world, conf_goal, sleep_time=0.005)
     print("At goal config")
     wait_for_user()
 
