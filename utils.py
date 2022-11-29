@@ -132,6 +132,15 @@ def pose_change_orient(orig_pose, new_orient):
     return new_pose
 
 
+def move(world, end_conf, sleep_time=0.005):
+    tool_link = link_from_name(world.robot, 'panda_hand')
+    start_conf = joint_poses_initial = get_joint_positions(world.robot, world.arm_joints)
+    ik_joints = get_ik_joints(world.robot, PANDA_INFO, tool_link)
+    for conf in interpolate_configs(start_conf, end_conf):
+        time.sleep(sleep_time)
+        set_joint_positions(world.robot, ik_joints, conf)
+    return get_joint_positions(world.robot, world.arm_joints)
+
 # Get the pose of an object in the world, modifying the orientation for the gripper
 def get_pose_obj_goal(world, object_name):
     obj_body = world.body_from_name[object_name]
