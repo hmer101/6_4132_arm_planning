@@ -200,12 +200,19 @@ def main():
     conf_goal = utils.get_goal_config(world, start_config, end_pose)
     #start_pos_robot = get_joint_positions(world.robot, world.arm_joints)
 
+
+    # Test "in hand"
+    item_in_hand = world.body_from_name['potted_meat_can1']
+
+    # Visualise moving to goal
     print(f"\n\nFound goal config! = {conf_goal}")
     for conf in utils.interpolate_configs(start_config, conf_goal):
         set_joint_positions(world.robot, ik_joints, conf)
+        set_pose(item_in_hand, get_link_pose(world.robot, tool_link))
         time.sleep(0.005)
     print("At goal config")
     wait_for_user()
+
 
 
     '''
