@@ -16,6 +16,7 @@ from pybullet_tools.transformations import quaternion_from_euler, euler_from_qua
 from src.world import World
 from src.utils import compute_surface_aabb
 import rrt
+import time
 KITCHEN_BODY = 0
 
 
@@ -106,7 +107,7 @@ def get_handle_position(world):
     return handle_pose
 
 
-def get_goal_config(world, start_config, end_pose, goal_radius=0.2, pose_step_size = 0.01, visualize=False):
+def get_goal_config(world, start_config, end_pose, goal_radius=0.2, pose_step_size = 0.025, visualize=False):
     tool_link = link_from_name(world.robot, 'panda_hand')
     ik_joints = get_ik_joints(world.robot, PANDA_INFO, tool_link)
 
@@ -116,7 +117,7 @@ def get_goal_config(world, start_config, end_pose, goal_radius=0.2, pose_step_si
     start_pose = tool_pose_from_config(world.robot, start_config)
     # set the joints to the starting config
     for pose in interpolate_poses(start_pose, end_pose, pos_step_size=pose_step_size):
-            conf = next(closest_inverse_kinematics(world.robot, PANDA_INFO, tool_link, pose, max_time=0.05), None)
+            conf = next(closest_inverse_kinematics(world.robot, PANDA_INFO, tool_link, pose, max_time=0.025), None)
             if rrt.goal_test_pos(pose[0], end_pose[0], radius=goal_radius):
                 return conf
             if visualize:
@@ -131,6 +132,16 @@ def pose_change_orient(orig_pose, new_orient):
 
     return new_pose
 
+
+def move(world, end_confs, sleep_time=0.005):
+    tool_link = link_from_name(world.robot, 'panda_hand')
+    start_conf = joint_poses_initial = get_joint_positions(world.robot, world.arm_joints)
+    ik_joints = get_ik_joints(world.robot, PANDA_INFO, tool_link)
+    for confs in end_confs:
+        for conf in interpolate_configs(start_conf, confs):
+            time.sleep(sleep_time)
+            set_joint_positions(world.robot, ik_joints, conf)
+    return get_joint_positions(world.robot, world.arm_joints)
 
 # Get the pose of an object in the world, modifying the orientation for the gripper
 def get_pose_obj_goal(world, object_name):
