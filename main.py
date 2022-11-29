@@ -194,7 +194,20 @@ def main():
 
     joint_poses_initial = get_joint_positions(world.robot, world.arm_joints)
     
+    start_config = joint_poses_initial
+    conf_goal = utils.get_goal_config(world, start_config, end_pose)
     #start_pos_robot = get_joint_positions(world.robot, world.arm_joints)
+
+    print(f"\n\nFound goal config! = {conf_goal}")
+    for conf in utils.interpolate_configs(start_config, conf_goal):
+        set_joint_positions(world.robot, ik_joints, conf)
+        time.sleep(0.005)
+    print("At goal config")
+    wait_for_user()
+
+
+    '''
+
     has_broken = False
     for i in range(100):
         for pose in interpolate_poses(start_pose, end_pose, pos_step_size=0.01):
@@ -227,7 +240,7 @@ def main():
     joint_poses_final = get_joint_positions(world.robot, world.arm_joints)
     print(joint_poses_final)
 
-    wait_for_user()
+    wait_for_user()'''
 
 
     ## COLLISION DETECTION TESTING

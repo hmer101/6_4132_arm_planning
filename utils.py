@@ -15,7 +15,7 @@ from pybullet_tools.ikfast.ikfast import get_ik_joints, closest_inverse_kinemati
 from pybullet_tools.transformations import quaternion_from_euler, euler_from_quaternion
 from src.world import World
 from src.utils import compute_surface_aabb
-
+import rrt
 KITCHEN_BODY = 0
 
 
@@ -102,6 +102,25 @@ def get_handle_position(world):
     #handle_pose[0][]
 
     return handle_pose
+
+
+def get_goal_config(world, start_config, end_pose, goal_radius=0.2, pose_step_size = 0.01, visualize=False):
+    tool_link = link_from_name(world.robot, 'panda_hand')
+    ik_joints = get_ik_joints(world.robot, PANDA_INFO, tool_link)
+
+    # Get original configuration to allow resetting
+    print(f"Start Config={start_config}")
+    #print(f"Start Config={start_config}")
+    start_pose = tool_pose_from_config(world.robot, start_config)
+    # set the joints to the starting config
+    for pose in interpolate_poses(start_pose, end_pose, pos_step_size=pose_step_size):
+            conf = next(closest_inverse_kinematics(world.robot, PANDA_INFO, tool_link, pose, max_time=0.05), None)
+            if rrt.goal_test_pos(pose[0], end_pose[0], radius=goal_radius):
+                return conf
+            if visualize:
+                set_joint_positions(world.robot, ik_joints, conf)
+    return None
+
 
 
 
