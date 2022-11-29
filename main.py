@@ -183,23 +183,39 @@ def main():
     #end_pose = multiply(start_pose, Pose(Point(z=1.0)))
     end_pose = utils.get_handle_position(world)
 
+    start_radius = 0.5
+    final_radius = 0.1
+    radius=start_radius
 
     joint_poses_initial = get_joint_positions(world.robot, world.arm_joints)
     print(joint_poses_initial)
 
     #start_pos_robot = get_joint_positions(world.robot, world.arm_joints)
-
+    has_broken = False
     for i in range(100):
         for pose in interpolate_poses(start_pose, end_pose, pos_step_size=0.01):
             conf = next(closest_inverse_kinematics(world.robot, PANDA_INFO, tool_link, pose, max_time=0.05), None)
+            if rrt.goal_test_pos(pose[0], end_pose[0], radius=radius):
+                radius-=0.05
+                print(f"Sucess! New radius={radius}")
+                
+                start_pose = get_link_pose(world.robot, tool_link)
+                set_joint_positions(world.robot, ik_joints, joint_poses_initial)
+                break
+                
+
             if conf is None:
                 print('Failure!')
+                has_broken = True
                 set_joint_positions(world.robot, ik_joints, joint_poses_initial)
                 #wait_for_user()
                 break
             
             set_joint_positions(world.robot, ik_joints, conf)
-        print(f"success at f{i}")
+        if has_broken:
+            has_broken=False
+            continue
+        print(f"success at {i}")
         wait_for_user()
 
 
