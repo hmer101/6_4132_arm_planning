@@ -187,11 +187,13 @@ def main():
     start_config = get_joint_positions(world.robot, world.arm_joints)
     conf_handle_closed = utils.get_goal_config(world, start_config, handle_pose_closed)
 
-    end_conf = utils.move(world, [conf_handle_closed], sleep_time=0.005)
+    end_conf = utils.move(world, [conf_handle_closed], None, sleep_time=0.005)
 
     print("Did first move")
     wait_for_user()
     utils.open_drawer(world)
+    print("Opened drawer")
+    wait_for_user()
 
     # surface_name = 'indigo_drawer_top'
     # surface = surface_from_name(surface_name)
