@@ -12,10 +12,10 @@ from pybullet_tools.utils import  link_from_name, multiply, Pose, Point, interpo
 from pybullet_tools.utils import get_link_pose, get_joint_positions, get_distance, get_angle, clone_body, get_body_info, get_pose
 from pybullet_tools.ikfast.franka_panda.ik import PANDA_INFO, FRANKA_URDF
 from pybullet_tools.ikfast.ikfast import get_ik_joints, closest_inverse_kinematics
-
+from pybullet_tools.transformations import quaternion_from_euler, euler_from_quaternion
 from src.world import World
 from src.utils import compute_surface_aabb
-
+import rrt
 KITCHEN_BODY = 0
 
 
@@ -91,15 +91,38 @@ def get_handle_position(world):
 
     # Add drawer dimensions for handle pose
     drawer_surface =  compute_surface_aabb(world, 'indigo_drawer_top')
-    handle_q = [0,0,1,0] #list(drawer_pose[1])
+    # -math.pi, 0 , 0 = facing down
+    # 0, -math.pi, 0 = facing down
+    handle_euler = [math.pi,math.pi/2,0]
+    handle_q = quaternion_from_euler(handle_euler[0], handle_euler[1], handle_euler[2]) #list(drawer_pose[1])
     handle_pose = (list(drawer_pose[0]), handle_q) #Note not a deep copy as drawer pose thrown away
     handle_pose[0][0] = float(drawer_surface.upper[0]) + 0.1 #handle_pose[0][0] +
     handle_pose[0][2] = handle_pose[0][2] - 0.1
     #handle_pose[1] = [0,0,0,1] 
     handle_pose = (tuple(handle_pose[0]), tuple(handle_pose[1]))
+    print(f"Handle_pose={handle_pose}")
     #handle_pose[0][]
 
     return handle_pose
+
+
+def get_goal_config(world, start_config, end_pose, goal_radius=0.2, pose_step_size = 0.01, visualize=False):
+    tool_link = link_from_name(world.robot, 'panda_hand')
+    ik_joints = get_ik_joints(world.robot, PANDA_INFO, tool_link)
+
+    # Get original configuration to allow resetting
+    print(f"Start Config={start_config}")
+    #print(f"Start Config={start_config}")
+    start_pose = tool_pose_from_config(world.robot, start_config)
+    # set the joints to the starting config
+    for pose in interpolate_poses(start_pose, end_pose, pos_step_size=pose_step_size):
+            conf = next(closest_inverse_kinematics(world.robot, PANDA_INFO, tool_link, pose, max_time=0.05), None)
+            if rrt.goal_test_pos(pose[0], end_pose[0], radius=goal_radius):
+                return conf
+            if visualize:
+                set_joint_positions(world.robot, ik_joints, conf)
+    return None
+
 
 
 # Change the orientation in a pose to a new pose

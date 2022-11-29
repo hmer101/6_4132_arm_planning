@@ -21,6 +21,7 @@ from pybullet_tools.utils import CIRCULAR_LIMITS, get_custom_limits, set_joint_p
 
 from pybullet_tools.ikfast.franka_panda.ik import PANDA_INFO, FRANKA_URDF
 from pybullet_tools.ikfast.ikfast import get_ik_joints, closest_inverse_kinematics
+from pybullet_tools.transformations import quaternion_from_euler, euler_from_quaternion
 
 from src.world import World
 from src.utils import JOINT_TEMPLATE, BLOCK_SIZES, BLOCK_COLORS, COUNTERS, \
@@ -172,6 +173,9 @@ def main():
     # wait_for_user()
     world._update_initial()
     tool_link = link_from_name(world.robot, 'panda_hand')
+    quat = get_link_pose(world.robot, tool_link)[1]
+    print(f'Init quaternion = {quat}')
+    print(f'Init euler = {euler_from_quaternion(quat)}')
     action_navigate(world)
 
     #conf = sample_fn()
@@ -184,30 +188,44 @@ def main():
 
     start_radius = 0.5
     final_radius = 0.1
+    radius_step = 0.05
     radius=start_radius
 
     joint_poses_initial = get_joint_positions(world.robot, world.arm_joints)
-    print(joint_poses_initial)
-
+    
     obj_pos_meat = utils.get_pose_obj_goal(world, 'potted_meat_can1') 
     obj_pos_sugar = utils.get_pose_obj_goal(world, 'sugar_box0')
 
+    start_config = joint_poses_initial
+    conf_goal = utils.get_goal_config(world, start_config, end_pose)
     #start_pos_robot = get_joint_positions(world.robot, world.arm_joints)
+
+    print(f"\n\nFound goal config! = {conf_goal}")
+    for conf in utils.interpolate_configs(start_config, conf_goal):
+        set_joint_positions(world.robot, ik_joints, conf)
+        time.sleep(0.005)
+    print("At goal config")
+    wait_for_user()
+
+
+    '''
+
     has_broken = False
     for i in range(100):
         for pose in interpolate_poses(start_pose, end_pose, pos_step_size=0.01):
             conf = next(closest_inverse_kinematics(world.robot, PANDA_INFO, tool_link, pose, max_time=0.05), None)
             if rrt.goal_test_pos(pose[0], end_pose[0], radius=radius):
-                radius-=0.05
-                print(f"Sucess! New radius={radius}")
+                radius-=radius_step
+                print(f"Sucess! Trying new radius={radius}")
                 
                 start_pose = get_link_pose(world.robot, tool_link)
+                joint_poses_initial = get_joint_positions(world.robot, world.arm_joints)
                 set_joint_positions(world.robot, ik_joints, joint_poses_initial)
                 break
                 
 
             if conf is None:
-                print('Failure!')
+                print(f'Failure at radius={radius}')
                 has_broken = True
                 set_joint_positions(world.robot, ik_joints, joint_poses_initial)
                 #wait_for_user()
@@ -224,7 +242,7 @@ def main():
     joint_poses_final = get_joint_positions(world.robot, world.arm_joints)
     print(joint_poses_final)
 
-    wait_for_user()
+    wait_for_user()'''
 
 
     ## COLLISION DETECTION TESTING
