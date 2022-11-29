@@ -162,7 +162,6 @@ def min_example():
 def main():
     #min_example()
 
-
     print('Random seed:', get_random_seed())
     print('Numpy seed:', get_numpy_seed())
 
@@ -189,6 +188,9 @@ def main():
 
     joint_poses_initial = get_joint_positions(world.robot, world.arm_joints)
     print(joint_poses_initial)
+
+    obj_pos_meat = utils.get_pose_obj_goal(world, 'potted_meat_can1') 
+    obj_pos_sugar = utils.get_pose_obj_goal(world, 'sugar_box0')
 
     #start_pos_robot = get_joint_positions(world.robot, world.arm_joints)
     has_broken = False

@@ -9,7 +9,7 @@ import gitmodules
 __import__('padm-project-2022f') 
 
 from pybullet_tools.utils import  link_from_name, multiply, Pose, Point, interpolate_poses, set_joint_positions
-from pybullet_tools.utils import get_link_pose, get_joint_positions, get_distance, get_angle, clone_body
+from pybullet_tools.utils import get_link_pose, get_joint_positions, get_distance, get_angle, clone_body, get_body_info, get_pose
 from pybullet_tools.ikfast.franka_panda.ik import PANDA_INFO, FRANKA_URDF
 from pybullet_tools.ikfast.ikfast import get_ik_joints, closest_inverse_kinematics
 
@@ -81,6 +81,8 @@ def tool_pose_from_config(robot_body, config):
     return tool_pose
 
 
+## FOR FINDING RRT GOAL POSES
+
 # Get the position of the indigo drawer handle in the world
 def get_handle_position(world):
     # Get drawer centre pose
@@ -99,6 +101,30 @@ def get_handle_position(world):
 
     return handle_pose
 
+
+# Change the orientation in a pose to a new pose
+def pose_change_orient(orig_pose, new_orient):
+    new_pose = (list(orig_pose[0]), new_orient)
+
+    return new_pose
+
+
+# Get the pose of an object in the world, modifying the orientation for the gripper
+def get_pose_obj_goal(world, object_name):
+    obj_body = world.body_from_name[object_name]
+    body_pose = get_pose(obj_body)
+
+    # Replace gripper orientation with custom orientation determined by object
+    gripper_orient = [0,0,1,0] # Edit this for custom end gripper orientation
+
+    if object_name == 'potted_meat_can1':
+        gripper_orient = [0,0,0,1]
+    elif object_name == 'sugar_box0':
+        gripper_orient = [0,0,1,0]
+    
+    gripper_pose = pose_change_orient(body_pose, gripper_orient)
+
+    return gripper_pose
 
 
 ## FOR BASE MOVEMENT
