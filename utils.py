@@ -145,7 +145,7 @@ def open_drawer(world):
     ee_start_config = get_joint_positions(world.robot, world.arm_joints)
 
     closed_handle_config = get_goal_config(world, ee_start_config, handle_pose_closed, goal_radius=0.2, ik_time=0.5)
-    move(world, [closed_handle_config])
+    
     tool_link = link_from_name(world.robot, 'panda_hand')
 
     #goal_pose = [list(start_pose[0]), list(start_pose[1])]
@@ -154,7 +154,7 @@ def open_drawer(world):
     goal_pose = get_handle_position(world, is_open=True)
     
     # move to the start config
-    move(world, [closed_handle_config])
+    
     ee_corrected_pos = get_joint_positions(world.robot, world.arm_joints)
     
     # eee=[]
@@ -169,7 +169,12 @@ def open_drawer(world):
 
     goal_conf = get_goal_config(world, ee_start_config, goal_pose, goal_radius=0.05, ik_time=0.025)
 
-    end_conf = move(world, [goal_conf], sleep_time=0.05)
+    surface_name = 'indigo_drawer_top'
+    surface = surface_from_name(surface_name)
+    
+    # Test "in hand"
+    item_in_hand = surface #world.body_from_name['potted_meat_can1']
+    end_conf = move(world, [goal_conf], item_in_hand, sleep_time=0.005)
 
     end_pose= tool_pose_from_config(world.robot, end_conf)
 
@@ -187,7 +192,7 @@ def open_drawer(world):
 
     return end_conf
 
-def move(world, end_confs, sleep_time=0.005):
+def move(world, end_confs, item_in_hand, sleep_time=0.005):
     tool_link = link_from_name(world.robot, 'panda_hand')
     start_conf = get_joint_positions(world.robot, world.arm_joints)
     ik_joints = get_ik_joints(world.robot, PANDA_INFO, tool_link)

@@ -187,20 +187,15 @@ def main():
     start_config = get_joint_positions(world.robot, world.arm_joints)
     conf_handle_closed = utils.get_goal_config(world, start_config, handle_pose_closed)
 
-    end_conf = utils.move(world, [conf_handle_closed], sleep_time=0.005)
+    end_conf = utils.move(world, [conf_handle_closed], None, sleep_time=0.005)
 
     print("Did first move")
     wait_for_user()
     utils.open_drawer(world)
-
-    surface_name = 'indigo_drawer_top'
-    surface = surface_from_name(surface_name)
-    print(f"SURFACE TYPE: {type(surface)}")
+    print("Opened drawer")
+    wait_for_user()
     
 
-    # Test "in hand"
-    item_in_hand = surface #world.body_from_name['potted_meat_can1']
-    utils.move(world, [conf_goal], item_in_hand, sleep_time=0.005)
 
     # # Visualise moving to goal
     # print(f"\n\nFound goal config! = {conf_goal}")
