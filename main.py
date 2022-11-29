@@ -196,7 +196,7 @@ def main():
 
     # Test "in hand"
     item_in_hand = world.body_from_name['potted_meat_can1']
-    utils.move(world, [conf_goal], sleep_time=0.005)
+    utils.move(world, [conf_goal], item_in_hand, sleep_time=0.005)
 
     # # Visualise moving to goal
     # print(f"\n\nFound goal config! = {conf_goal}")
