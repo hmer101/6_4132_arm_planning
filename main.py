@@ -194,7 +194,7 @@ def main():
     conf_goal = utils.get_goal_config(world, start_config, end_pose)
 
     print(f"\n\nFound goal config! = {conf_goal}")
-    utils.move(world, conf_goal, sleep_time=0.005)
+    utils.move(world, [conf_goal], sleep_time=0.005)
     print("At goal config")
     wait_for_user()
 

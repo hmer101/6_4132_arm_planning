@@ -16,6 +16,7 @@ from pybullet_tools.transformations import quaternion_from_euler, euler_from_qua
 from src.world import World
 from src.utils import compute_surface_aabb
 import rrt
+import time
 KITCHEN_BODY = 0
 
 
@@ -132,13 +133,14 @@ def pose_change_orient(orig_pose, new_orient):
     return new_pose
 
 
-def move(world, end_conf, sleep_time=0.005):
+def move(world, end_confs, sleep_time=0.005):
     tool_link = link_from_name(world.robot, 'panda_hand')
     start_conf = joint_poses_initial = get_joint_positions(world.robot, world.arm_joints)
     ik_joints = get_ik_joints(world.robot, PANDA_INFO, tool_link)
-    for conf in interpolate_configs(start_conf, end_conf):
-        time.sleep(sleep_time)
-        set_joint_positions(world.robot, ik_joints, conf)
+    for confs in end_confs:
+        for conf in interpolate_configs(start_conf, confs):
+            time.sleep(sleep_time)
+            set_joint_positions(world.robot, ik_joints, conf)
     return get_joint_positions(world.robot, world.arm_joints)
 
 # Get the pose of an object in the world, modifying the orientation for the gripper
