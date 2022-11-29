@@ -40,16 +40,16 @@ KITCHEN_BODY = 0
 #     return out_config
 
 # NOT YET WORKING!!!!
-def config_from_tool_pose(robot_body, arm_joints, pose):
-    # Clone body to find config from pose
-    #test_body = clone_body(robot_body, links=arm_joints, collision=True, visual=False, client=None)
+# def config_from_tool_pose(robot_body, arm_joints, pose):
+#     # Clone body to find config from pose
+#     #test_body = clone_body(robot_body, links=arm_joints, collision=True, visual=False, client=None)
     
-    tool_link = link_from_name(robot_body, 'panda_hand')
-    ik_joints = get_ik_joints(robot_body, PANDA_INFO, tool_link)
+#     tool_link = link_from_name(robot_body, 'panda_hand')
+#     ik_joints = get_ik_joints(robot_body, PANDA_INFO, tool_link)
 
-    out_config = False
+#     out_config = False
 
-    return out_config
+#     return out_config
 
 
 # converted this function from a generator to returning a list
@@ -85,7 +85,7 @@ def tool_pose_from_config(robot_body, config):
 ## FOR FINDING RRT GOAL POSES
 
 # Get the position of the indigo drawer handle in the world
-def get_handle_position(world):
+def get_handle_position(world, is_open):
     # Get drawer centre pose
     drawer_link = link_from_name(KITCHEN_BODY,'indigo_drawer_top')
     drawer_pose = get_link_pose(KITCHEN_BODY, drawer_link)
@@ -98,30 +98,34 @@ def get_handle_position(world):
     handle_q = quaternion_from_euler(handle_euler[0], handle_euler[1], handle_euler[2]) #list(drawer_pose[1])
     handle_pose = (list(drawer_pose[0]), handle_q) #Note not a deep copy as drawer pose thrown away
     handle_pose[0][0] = float(drawer_surface.upper[0]) + 0.1 #handle_pose[0][0] +
+    if is_open:
+        handle_pose[0][0] += 0.5 # if the drawer is open, the handle is this much further out
     handle_pose[0][2] = handle_pose[0][2] - 0.1
     #handle_pose[1] = [0,0,0,1] 
     handle_pose = (tuple(handle_pose[0]), tuple(handle_pose[1]))
-    print(f"Handle_pose={handle_pose}")
     #handle_pose[0][]
 
     return handle_pose
 
 
-def get_goal_config(world, start_config, end_pose, goal_radius=0.2, pose_step_size = 0.025, visualize=False):
+
+
+
+def get_goal_config(world, start_config, end_pose, goal_radius=0.2, pose_step_size = 0.025, visualize=False, ik_time=0.025):
     tool_link = link_from_name(world.robot, 'panda_hand')
     ik_joints = get_ik_joints(world.robot, PANDA_INFO, tool_link)
 
     # Get original configuration to allow resetting
-    print(f"Start Config={start_config}")
     #print(f"Start Config={start_config}")
     start_pose = tool_pose_from_config(world.robot, start_config)
     # set the joints to the starting config
     for pose in interpolate_poses(start_pose, end_pose, pos_step_size=pose_step_size):
-            conf = next(closest_inverse_kinematics(world.robot, PANDA_INFO, tool_link, pose, max_time=0.025), None)
+            conf = next(closest_inverse_kinematics(world.robot, PANDA_INFO, tool_link, pose, max_time=ik_time), None)
             if rrt.goal_test_pos(pose[0], end_pose[0], radius=goal_radius):
                 return conf
             if visualize:
                 set_joint_positions(world.robot, ik_joints, conf)
+    print("ERROR! NO GOAL CONFIG FOUND!!!")
     return None
 
 
@@ -133,11 +137,62 @@ def pose_change_orient(orig_pose, new_orient):
     return new_pose
 
 
+def open_drawer(world):
+    
+    # TODO Check that it is at the start pose before moving
+    handle_pose_closed = get_handle_position(world, is_open=False)
+
+    ee_start_config = get_joint_positions(world.robot, world.arm_joints)
+
+    closed_handle_config = get_goal_config(world, ee_start_config, handle_pose_closed, goal_radius=0.2, ik_time=0.5)
+    move(world, [closed_handle_config])
+    tool_link = link_from_name(world.robot, 'panda_hand')
+
+    #goal_pose = [list(start_pose[0]), list(start_pose[1])]
+    #goal_pose[0][0] = float(goal_pose[0][0])+float(0.1)
+    ee_start_pose = get_link_pose(world.robot, tool_link)
+    goal_pose = get_handle_position(world, is_open=True)
+    
+    # move to the start config
+    move(world, [closed_handle_config])
+    ee_corrected_pos = get_joint_positions(world.robot, world.arm_joints)
+    
+    # eee=[]
+    # correction = []
+    # for i in range(len(ee_start_pose[0])):
+    #     eee.append(handle_pose_closed[0][i]-ee_start_pose[0][i])
+    #     correction.append[ee_corrected_pos[0][i] - ee_start_pose[0][i]]
+    # eeetot = (sum([x**2 for x in eee]))
+
+    #print(f"EE_ERROR={eeetot}, {eee} \nEE_START_POSE={ee_start_pose} \nHANDLE_START_POSE={handle_pose_closed} \nGOAL_POSE = {goal_pose}\n\n")
+
+
+    goal_conf = get_goal_config(world, ee_start_config, goal_pose, goal_radius=0.05, ik_time=0.025)
+
+    end_conf = move(world, [goal_conf], sleep_time=0.05)
+
+    end_pose= tool_pose_from_config(world.robot, end_conf)
+
+    # e1 = []
+    # etot = 0
+    # dist= []
+    # eee=[]
+    # for i in range(len(goal_pose[0])):
+    #     eee.append(handle_pose_closed[0][i]-ee_start_pose[0][i])
+    #     e1.append(goal_pose[0][i]-end_pose[0][i])
+    #     dist.append(ee_start_pose[0][i]-goal_pose[0][i])
+    # etot = (sum([x**2 for x in e1]))
+
+    #print(f"EE_ERROR={eee} \nSTART_POSE = {ee_start_pose}\nGOAL_POSE={goal_pose}\nEND_POSE={end_pose}\nERROR={etot},xyz={e1}\nDIST={dist}\n\n")
+
+    return end_conf
+
 def move(world, end_confs, sleep_time=0.005):
     tool_link = link_from_name(world.robot, 'panda_hand')
-    start_conf = joint_poses_initial = get_joint_positions(world.robot, world.arm_joints)
+    start_conf = get_joint_positions(world.robot, world.arm_joints)
     ik_joints = get_ik_joints(world.robot, PANDA_INFO, tool_link)
     for confs in end_confs:
+        print("\n\nDOING CONFIG")
         for conf in interpolate_configs(start_conf, confs):
             time.sleep(sleep_time)
             set_joint_positions(world.robot, ik_joints, conf)

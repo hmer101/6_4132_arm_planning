@@ -170,36 +170,43 @@ def main():
     world = World(use_gui=True)
     sugar_box = add_sugar_box(world, idx=0, counter=1, pose2d=(-0.2, 0.65, np.pi / 4))
     spam_box = add_spam_box(world, idx=1, counter=0, pose2d=(0.2, 1.1, np.pi / 4))
-    # wait_for_user()
-    world._update_initial()
-    tool_link = link_from_name(world.robot, 'panda_hand')
-    quat = get_link_pose(world.robot, tool_link)[1]
-    print(f'Init quaternion = {quat}')
-    print(f'Init euler = {euler_from_quaternion(quat)}')
-    action_navigate(world)
-
-    #conf = sample_fn()
-    #set_joint_positions(world.robot, world.arm_joints, conf)
-    #wait_for_user()
-    ik_joints = get_ik_joints(world.robot, PANDA_INFO, tool_link)
-    start_pose = get_link_pose(world.robot, tool_link)
-    #end_pose = multiply(start_pose, Pose(Point(z=1.0)))
-    end_pose = utils.get_handle_position(world)
-
-    start_config = get_joint_positions(world.robot, world.arm_joints)
-    
     obj_pos_meat = utils.get_pose_obj_goal(world, 'potted_meat_can1') 
     obj_pos_sugar = utils.get_pose_obj_goal(world, 'sugar_box0')
 
-    conf_goal = utils.get_goal_config(world, start_config, end_pose)
+    # wait_for_user()
+    world._update_initial()
+    tool_link = link_from_name(world.robot, 'panda_hand')
+    action_navigate(world)
 
-    print(f"\n\nFound goal config! = {conf_goal}")
-    utils.move(world, [conf_goal], sleep_time=0.005)
-    print("At goal config")
+    #set_joint_positions(world.robot, world.arm_joints, conf)
+    ik_joints = get_ik_joints(world.robot, PANDA_INFO, tool_link)
+    start_pose = get_link_pose(world.robot, tool_link)
+
+
+    handle_pose_closed = utils.get_handle_position(world, is_open=False)
+    start_config = get_joint_positions(world.robot, world.arm_joints)
+    conf_handle_closed = utils.get_goal_config(world, start_config, handle_pose_closed)
+
+    end_conf = utils.move(world, [conf_handle_closed], sleep_time=0.005)
+
+    print("Did first move")
+    wait_for_user()
+    utils.open_drawer(world)
+
+    print("Did 2nd move")
+    wait_for_user()
+    
+
+    '''
+    print("Did first move")
+    wait_for_user()
+    utils.open_drawer(world)
+    print("Did 2nd move")
+
     wait_for_user()
 
 
-    '''
+    
 
     has_broken = False
     for i in range(100):
