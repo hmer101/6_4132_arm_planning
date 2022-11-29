@@ -193,14 +193,14 @@ def main():
     wait_for_user()
     utils.open_drawer(world)
 
-    surface_name = 'indigo_drawer_top'
-    surface = surface_from_name(surface_name)
-    print(f"SURFACE TYPE: {type(surface)}")
+    # surface_name = 'indigo_drawer_top'
+    # surface = surface_from_name(surface_name)
+    # print(f"SURFACE TYPE: {type(surface)}")
     
 
-    # Test "in hand"
-    item_in_hand = surface #world.body_from_name['potted_meat_can1']
-    utils.move(world, [conf_goal], item_in_hand, sleep_time=0.005)
+    # # Test "in hand"
+    # item_in_hand = surface #world.body_from_name['potted_meat_can1']
+    # utils.move(world, [conf_goal], item_in_hand, sleep_time=0.005)
 
     # # Visualise moving to goal
     # print(f"\n\nFound goal config! = {conf_goal}")
