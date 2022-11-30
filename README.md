@@ -69,31 +69,30 @@ Contained in part1 folder.
 - No collision checking when base is moved - movement function and goal position designed for the kitchen such that no collisions will occur
 
 
+
+Goal sampling fxn
+- Need some way of generating a config from a (goal) pose (config_from_tool_pose) - waiting on Piazza response
+
+
 ### Current Issues
 - FF_Planner gives strange results in blocksworld pb4 - oscillates between pickup and putdown 
 - FF doesn't order by helpful actions (implemented but not used)
 
 
 TODO part 2:
-interpolate_configs (in utils) - for making smooth movements between 
-- implement (inspired by interpolate_positions)
-- uncomment in extend
+- Fix arm move back with drawer
+- Get countertop goal pose
+- Link to action planner
+    - Update action planner
+    - "Put down" 
+    - "Pick up"
+    - Close drawer
 
-follow_configs
-- Take config list returned from RRT, interpolate with interpolate_configs, execute
-
-
+- Clean up
 
 Collision fxn
 - Detect collisions with self (robot arm). Maybe have to do this by intersecting surfaces around links? Maybe some built-in functions to help? Look at current collision function for where self-collision checking fits in and methods already tried.
 - Test if current collision method works with spam box and sugar bag
 
 
-Goal sampling fxn
-- Need some way of generating a config from a (goal) pose (config_from_tool_pose) - waiting on Piazza response
-- 
-
-rrt
-- add in goal checking and remove visualization (at end)
-- remove un-needed parameters in rrt and un-needed imports (at end)
 
