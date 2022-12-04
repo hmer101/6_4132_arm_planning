@@ -94,7 +94,7 @@ def get_pose_obj_goal(world, object_name):
     return gripper_pose
 
 # Get configuration from an end gripper pose
-def get_goal_config(world, start_config, end_pose, goal_radius=0.02, pose_step_size = 0.025, visualize=False, ik_time=0.025):
+def get_goal_config(world, start_config, end_pose, goal_radius=0.01, pose_step_size = 0.025, visualize=False, ik_time=0.025):
     tool_link = link_from_name(world.robot, 'panda_hand')
     ik_joints = get_ik_joints(world.robot, PANDA_INFO, tool_link)
 

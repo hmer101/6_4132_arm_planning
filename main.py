@@ -88,13 +88,13 @@ def main():
     start_config = get_joint_positions(world.robot, world.arm_joints)
     conf_handle_closed = utils.get_goal_config(world, start_config, handle_pose_closed)
 
-    conf_meat_can = utils.get_goal_config(world,start_config,obj_pos_meat)
+    #conf_meat_can = utils.get_goal_config(world,start_config,obj_pos_meat)
 
 
     #utils.move(world, handle_pose_closed, item_in_hand=None, sleep_time=0.005)
 
     # Run RRT
-    config_path = rrt.rrt_arm_wrapper(start_config, conf_meat_can, world.robot, world.arm_joints)
+    config_path = rrt.rrt_arm_wrapper(start_config, conf_handle_closed, world.robot, world.arm_joints)
     end_conf = utils.move(world, config_path)
 
     wait_for_user()
