@@ -64,8 +64,7 @@ def rand_position(start_pose):
 
 
 
-# if __name__ == '__main__':
-#     main()
+
 
 
     
@@ -84,9 +83,9 @@ def main():
     obj_pos_meat = utils.get_pose_obj_goal(world, 'potted_meat_can1')
     obj_pos_sugar = utils.get_pose_obj_goal(world, 'sugar_box0')
     global pos_counter
-    pos_counter = tuple(obj_pos_meat)
+    pos_counter = utils.pose_offset(obj_pos_meat, 0.2, 0.0, 0.1)
     global pos_burner
-    pos_burner = tuple(obj_pos_sugar)
+    pos_burner = utils.pose_offset(obj_pos_sugar, 0.2, 0.0, 0.1)
     franka_name = 'franka'
     indigo_drawer_handle_name = 'indigo_drawer_handle'
     indigo_drawer_center_name = 'indigo_drawer'
@@ -287,67 +286,5 @@ def main():
     # wait_for_user()
 
 
-
-
-    '''
-    print("Did first move")
-    wait_for_user()
-    utils.open_drawer(world)
-    print("Did 2nd move")
-
-    wait_for_user()
-    world.destroy()
-
-    ## COLLISION DETECTION TESTING
-    # Good for testing self-collision
-    #set_joint_positions(world.robot, [world.arm_joints[1]], [3]) 
-
-    # Test collisions with other objects
-    #set_joint_positions(world.robot, [world.arm_joints[1]], [2.5])
-    #set_joint_positions(world.robot, [world.arm_joints[3]], [0])
-    # config_test = get_joint_positions(world.robot, world.arm_joints)
-    # result = rrt.detect_collision(world.robot, config_test)
-
-
-#     def clone_world(client=None, exclude=[]):
-#     visual = has_gui(client)
-#     mapping = {}
-#     for body in get_bodies():
-#         if body not in exclude:
-#             new_body = clone_body(body, collision=True, visual=visual, client=client)
-#             mapping[body] = new_body
-#     return mapping
-
-
-
-# def body_collision(body1, body2, max_distance=MAX_DISTANCE): # 10000
-#     # TODO: confirm that this doesn't just check the base link
-#     return len(p.getClosestPoints(bodyA=body1, bodyB=body2, distance=max_distance,
-#                                   physicsClientId=CLIENT)) != 0 # getContactPoints`
-
-# def pairwise_collision(body1, body2, **kwargs):
-#     if isinstance(body1, tuple) or isinstance(body2, tuple):
-#         body1, links1 = expand_links(body1)
-#         body2, links2 = expand_links(body2)
-#         return any_link_pair_collision(body1, links1, body2, links2, **kwargs)
-#     return body_collision(body1, body2, **kwargs)
-
-# def single_collision(body1, **kwargs):
-#     for body2 in get_bodies():
-#         if (body1 != body2) and pairwise_collision(body1, body2, **kwargs):
-#             return True
-#     return False
-
-# def link_pairs_collision(body1, links1, body2, links2=None, **kwargs):
-#     if links2 is None:
-#         links2 = get_all_links(body2)
-#     for link1, link2 in product(links1, links2):
-#         if (body1 == body2) and (link1 == link2):
-#             continue
-#         if pairwise_link_collision(body1, link1, body2, link2, **kwargs):
-#             return True
-#     return False
-
-
 if __name__ == '__main__':
-    main()
+     main()

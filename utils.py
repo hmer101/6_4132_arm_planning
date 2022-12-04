@@ -55,7 +55,7 @@ def get_drawer_center_position(world):
     xyz = []
     for i in range(3):
         xyz.append((open[0][i] + closed[0][i])/2)
-    xyz[2] += 0.1
+    xyz[2] += 0.2
     return (xyz, open[1])
 
 # Get the position of the indigo drawer handle in the world
@@ -103,8 +103,8 @@ def get_handle_position(world, is_open):
     handle_euler = [math.pi,math.pi/2,0]
     handle_q = quaternion_from_euler(handle_euler[0], handle_euler[1], handle_euler[2]) 
     handle_pose = (list(drawer_pose[0]), handle_q) #Note not a deep copy as drawer pose thrown away
-    handle_pose[0][0] = drawer_surface.upper[0] + 0.22 # add to this value ot move 
-    handle_pose[0][2] = handle_pose[0][2] - 0.04 # subtract this value to move further up
+    handle_pose[0][0] = drawer_surface.upper[0] + 0.2 # add to this value ot move 
+    handle_pose[0][2] = handle_pose[0][2] - 0.0 
     if is_open:
         handle_pose[0][0] += 0.5 #((0.4287344217300415, 1.0858064889907837, -0.6024341583251953), (0.7225275039672852, 0.36401623487472534, -0.5689088106155396, -0.14761091768741608))
     
@@ -175,7 +175,7 @@ def open_the_drawer(world, surface):
     goal_pose = ee_end_pose#get_handle_position(world, is_open=True)
     # move to the start config
     
-    goal_conf = get_goal_config(world, ee_start_config, goal_pose, goal_radius=0.01, ik_time=0.025)
+    goal_conf = get_goal_config(world, ee_start_config, goal_pose, goal_radius=0.01, ik_time=0.1)
 
     surface_name = 'indigo_drawer_top'
     surface = surface_from_name(surface_name)
@@ -186,6 +186,8 @@ def open_the_drawer(world, surface):
     item_in_hand = None
     return end_conf
 
+def pose_offset(pose, x, y, z):
+    return ((pose[0][0]+x,pose[0][1]+y,pose[0][2]+z), pose[1])
 
 # Move the arm in the world by interpolating between end_confs
 def move(world, end_confs, item_in_hand=None, sleep_time=0.005):
