@@ -169,38 +169,55 @@ def main():
 
     print('Random seed:', get_random_seed())
     print('Numpy seed:', get_numpy_seed())
-
+    
     np.set_printoptions(precision=3, suppress=True)
     world = World(use_gui=True)
     sugar_box = add_sugar_box(world, idx=0, counter=1, pose2d=(-0.2, 0.65, np.pi / 4))
     spam_box = add_spam_box(world, idx=1, counter=0, pose2d=(0.2, 1.1, np.pi / 4))
-    obj_pos_meat = utils.get_pose_obj_goal(world, 'potted_meat_can1') 
+    obj_pos_meat = utils.get_pose_obj_goal(world, 'potted_meat_can1')
     obj_pos_sugar = utils.get_pose_obj_goal(world, 'sugar_box0')
-    
-    
-
+    global pos_counter
+    pos_counter = tuple(obj_pos_meat)
+    global pos_burner
+    pos_burner = tuple(obj_pos_sugar)
     franka_name = 'franka'
     indigo_drawer_name = 'indigo_drawer_top'
     burner_name = 'burner'
-    countertop_name = 'contertop'
+    countertop_name = 'countertop'
     KITCHEN_BODY = 0
     item_in_hand = dict()
     is_open = dict()
     is_open[indigo_drawer_name] = False
     item_in_hand[franka_name] = None
+
+    world._update_initial()
+    tool_link = link_from_name(world.robot, 'panda_hand')
+    action_navigate(world)
+
+    #set_joint_positions(world.robot, world.arm_joints, conf)
+    ik_joints = get_ik_joints(world.robot, PANDA_INFO, tool_link)
+    start_pose = get_link_pose(world.robot, tool_link)
+    
+
+    handle_pose_closed = utils.get_handle_position(world, is_open=False)
+    start_config = get_joint_positions(world.robot, world.arm_joints)
+    global current_conf
+    current_conf = start_config
     
     def get_robot(robot_name):
         if robot_name == 'franka':
             return world.robot
 
-    def get_pose(end_location):
-        if end_location == burner_name:
-            return 
-        if end_location == indigo_drawer_name:
-            utils.get_handle_position(world, is_open[indigo_drawer_name])
-            return get_drawer_pose(end_location) #TODO CHECK THIS FUNCTION
-        if end_location == countertop_name:
-            return
+    def planner_get_pose(end_location_name):
+        if end_location_name == burner_name:
+            return pos_burner
+            #return utils.get_surface_position(world, 'front_right')
+        if end_location_name == indigo_drawer_name:
+            return utils.get_handle_position(world, is_open['indigo_drawer_top'])
+            #return get_drawer_pose(end_location_name) #TODO CHECK THIS FUNCTION
+        if end_location_name == countertop_name:
+            return pos_counter
+            #return utils.get_surface_position(world, 'indigo_tmp')
 
     def get_drawer_link(drawer_name):
         return link_from_name(KITCHEN_BODY,drawer_name)
@@ -213,16 +230,41 @@ def main():
 
     def navigate(robot_name, start_location, end_location):
         robot = get_robot(robot_name)
-        end_pose = get_pose(end_location)
-        start_pose = get_pose(start_location)
+        end_pose = planner_get_pose(end_location)
+        if end_pose == None:
+            print(f"Error! No end_pose found for {end_location}")
+            wait_for_user()
+        start_pose = planner_get_pose(start_location)
+        global current_conf
         # TODO Check that the start_pose and current robot pose are close
-        end_confs = 0 # IMPLEMENT RRT HERE
-        utils.move(world, end_confs, item_in_hand=item_in_hand[robot_name], sleep_time=0.005)
+        current_pose = utils.tool_pose_from_config(world.robot, current_conf)
+        c_sq = 0
+        for i in range(len(current_pose[0])):
+            c_sq += (current_pose[0][i] - start_pose[0][i])**2
+        if c_sq >= 0.21:
+            print (f"ERROR! ROBOT NOT AT START POSE!\nPose={current_pose}\nStart={start_pose}")
+            wait_for_user()
+        else:
+            print ("Navigate ok. Robot near start pose...")
+
+        end_config = utils.get_goal_config(world, current_conf, end_pose, ik_time=0.1)
+        if end_config == None:
+            print ("ERROR! No end config found! Exiting program")
+            wait_for_user()
+
+        
+        config_path = rrt.rrt_arm_wrapper(current_conf, end_config, world.robot, world.arm_joints)
+        if config_path == None:
+            print ("ERROR! No config_path found! Exiting program")
+            wait_for_user()
+
+        current_conf = utils.move(world, config_path, item_in_hand=item_in_hand[robot_name])
     
     def open_drawer(robot_name, drawer_name):
         robot = get_robot(robot_name)
         surface = get_surface(drawer_name)
-        utils.open_the_drawer(world, surface)
+        current_conf = utils.open_the_drawer(world, surface)
+        
         is_open[drawer_name] = True
 
     def pick_up (robot_name, item_name):
@@ -231,14 +273,12 @@ def main():
     def place (robot_name, item_name, surface_name):
         item_in_hand[robot_name] = None
 
-
     # TODO
     def close_drawer (robot_name, drawer_name):
         robot = get_robot(robot_name)
         surface = get_surface(drawer_name)
         #utils.close_the_drawer(world, surface)
         is_open[drawer_name] = False
-
     def perform_action (name, params):
         a = name
         if a == 'open-drawer':
@@ -253,28 +293,18 @@ def main():
             close_drawer(params[0],params[1])
 
     # wait_for_user()
-    world._update_initial()
-    tool_link = link_from_name(world.robot, 'panda_hand')
-    action_navigate(world)
-
-    #set_joint_positions(world.robot, world.arm_joints, conf)
-    ik_joints = get_ik_joints(world.robot, PANDA_INFO, tool_link)
-    start_pose = get_link_pose(world.robot, tool_link)
-
-
-    handle_pose_closed = utils.get_handle_position(world, is_open=False)
-    start_config = get_joint_positions(world.robot, world.arm_joints)
-
+    
     dirname = os.path.abspath(os.path.join(os.getcwd(), 'part1'))
     domain = os.path.join(dirname,'domain.pddl') #dinner blocksworld.pddl domain.pddl
     problem = os.path.join(dirname,'problem.pddl') #pb1_dinner pb4_blocksworld.pddl problem.pddl
     planner = FF_Planner(domain, problem)
     plan = planner.solve()
+    
 
     if type(plan) is list:
         print('EXECUTING PLAN:')
         for act in plan:
-            print((act.name) + ' ' + ' '.join(act.parameters))
+            print('PERFORMING ACTION: ' + (act.name) + ' ' + ' '.join(act.parameters))
             
             perform_action(act.name, act.parameters)
     else:
@@ -282,7 +312,7 @@ def main():
         exit(1)
 
 
-    conf_handle_closed = utils.get_goal_config(world, start_config, handle_pose_closed)
+    #conf_handle_closed = utils.get_goal_config(world, start_config, handle_pose_closed)
     
     # end_conf = utils.move(world, [conf_handle_closed], None, sleep_time=0.005)
     
@@ -304,8 +334,12 @@ def main():
     # config_path = rrt.rrt(world, world.robot, start, goal_sample, distance_fn, sample_fn, extend_fn, collision_fn, goal_test,
     #     goal_probability=.2, max_iterations=20, max_time=float('inf'), visualize=True)
 
-    config_path = rrt.rrt_arm_wrapper(start_config, conf_handle_closed, world.robot, world.arm_joints)
-    end_conf = utils.move(world, config_path)
+
+    #########################
+    # THIS IS GOOD BELOW:
+    #########################
+    #config_path = rrt.rrt_arm_wrapper(start_config, conf_handle_closed, world.robot, world.arm_joints)
+    #end_conf = utils.move(world, config_path)
 
     # surface_name = 'indigo_drawer_top'
     # surface = surface_from_name(surface_name)

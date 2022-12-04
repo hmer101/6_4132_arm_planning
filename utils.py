@@ -83,6 +83,28 @@ def tool_pose_from_config(robot_body, config):
 
 ## FOR FINDING RRT GOAL POSES
 
+
+# Get the position of the indigo drawer handle in the world
+def get_surface_position(world, surface_name):
+    # Get drawer centre pose
+    surface_link = link_from_name(KITCHEN_BODY,surface_name)
+    surface_pose = get_link_pose(KITCHEN_BODY, surface_link)
+
+    # Add drawer dimensions for handle pose
+    surface_surface =  compute_surface_aabb(world, surface_name)
+    # -math.pi, 0 , 0 = facing down
+    # 0, -math.pi, 0 = facing down
+    handle_euler = [math.pi,math.pi/2,0]
+    handle_q = quaternion_from_euler(handle_euler[0], handle_euler[1], handle_euler[2]) #list(drawer_pose[1])
+    handle_pose = (list(surface_pose[0]), handle_q) #Note not a deep copy as drawer pose thrown away
+    handle_pose[0][0] = float(surface_pose.upper[0]) + 0.1 # back for not colliding with the object on the counter/burner
+    handle_pose[0][2] = handle_pose[0][2] + 0.1 # up for countertop and burner
+    handle_pose = (tuple(handle_pose[0]), tuple(handle_pose[1]))
+    #handle_pose[0][]
+
+    return handle_pose
+
+
 # Get the position of the indigo drawer handle in the world
 def get_handle_position(world, is_open):
     # Get drawer centre pose
@@ -97,9 +119,10 @@ def get_handle_position(world, is_open):
     handle_q = quaternion_from_euler(handle_euler[0], handle_euler[1], handle_euler[2]) #list(drawer_pose[1])
     handle_pose = (list(drawer_pose[0]), handle_q) #Note not a deep copy as drawer pose thrown away
     handle_pose[0][0] = float(drawer_surface.upper[0]) + 0.1 #handle_pose[0][0] +
-    if is_open:
-        handle_pose[0][0] += 0.5 # if the drawer is open, the handle is this much further out
     handle_pose[0][2] = handle_pose[0][2] - 0.1
+    if is_open:
+        handle_pose = ((0.4287344217300415, 1.0858064889907837, -0.6024341583251953), (0.7225275039672852, 0.36401623487472534, -0.5689088106155396, -0.14761091768741608))
+    
     #handle_pose[1] = [0,0,0,1] 
     handle_pose = (tuple(handle_pose[0]), tuple(handle_pose[1]))
     #handle_pose[0][]
