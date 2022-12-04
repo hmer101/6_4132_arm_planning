@@ -20,39 +20,6 @@ import time
 KITCHEN_BODY = 0
 
 
-#### TO FIX/IMPLEMENT
-# def steer(start_pose, end_pose, world, tool_link, ik_joints, visualize=False):
-#     for pose in interpolate_poses(start_pose, end_pose, pos_step_size=0.01):
-#             conf = next(closest_inverse_kinematics(world.robot, PANDA_INFO, tool_link, pose, max_time=0.05), None)
-#             if conf is None:
-#                 return False
-#             if visualize:
-#                 # Conf is a list with the position (float) of each joint
-#                 set_joint_positions(world.robot, ik_joints, conf)
-#     return conf
-
-# TO FIX -> Don't use inverse kinematics???????
-# def config_from_pose(robot_body, pose):
-#     tool_link = link_from_name(robot_body, 'panda_hand')
-#     ik_joints = get_ik_joints(robot_body, PANDA_INFO, tool_link)
-#     out_config = next(closest_inverse_kinematics(robot_body, PANDA_INFO, tool_link, pose, max_time=0.05), None)
-
-#     return out_config
-
-# NOT YET WORKING!!!!
-# def config_from_tool_pose(robot_body, arm_joints, pose):
-#     # Clone body to find config from pose
-#     #test_body = clone_body(robot_body, links=arm_joints, collision=True, visual=False, client=None)
-    
-#     tool_link = link_from_name(robot_body, 'panda_hand')
-#     ik_joints = get_ik_joints(robot_body, PANDA_INFO, tool_link)
-
-#     out_config = False
-
-#     return out_config
-
-
-
 ## HELPER FUNCTIONS
 # converted this function from a generator to returning a list
 def interpolate_configs(start_config, end_config, config_step_size=0.01):
@@ -89,18 +56,16 @@ def get_handle_position(world, is_open):
 
     # Add drawer dimensions for handle pose
     drawer_surface =  compute_surface_aabb(world, 'indigo_drawer_top')
-    # -math.pi, 0 , 0 = facing down
-    # 0, -math.pi, 0 = facing down
     handle_euler = [math.pi,math.pi/2,0]
-    handle_q = quaternion_from_euler(handle_euler[0], handle_euler[1], handle_euler[2]) #list(drawer_pose[1])
+    handle_q = quaternion_from_euler(handle_euler[0], handle_euler[1], handle_euler[2]) 
     handle_pose = (list(drawer_pose[0]), handle_q) #Note not a deep copy as drawer pose thrown away
-    handle_pose[0][0] = float(drawer_surface.upper[0]) + 0.1 #handle_pose[0][0] +
+    handle_pose[0][0] = float(drawer_surface.upper[0]) + 0.1 
+
     if is_open:
         handle_pose[0][0] += 0.5 # if the drawer is open, the handle is this much further out
+
     handle_pose[0][2] = handle_pose[0][2] - 0.1
-    #handle_pose[1] = [0,0,0,1] 
     handle_pose = (tuple(handle_pose[0]), tuple(handle_pose[1]))
-    #handle_pose[0][]
 
     return handle_pose
 
@@ -128,7 +93,7 @@ def get_pose_obj_goal(world, object_name):
 
     return gripper_pose
 
-
+# Get configuration from an end gripper pose
 def get_goal_config(world, start_config, end_pose, goal_radius=0.2, pose_step_size = 0.025, visualize=False, ik_time=0.025):
     tool_link = link_from_name(world.robot, 'panda_hand')
     ik_joints = get_ik_joints(world.robot, PANDA_INFO, tool_link)
@@ -149,35 +114,19 @@ def get_goal_config(world, start_config, end_pose, goal_radius=0.2, pose_step_si
 
 # Open the drawer
 def open_drawer(world):
-    
     # TODO Check that it is at the start pose before moving
     handle_pose_closed = get_handle_position(world, is_open=False)
 
     ee_start_config = get_joint_positions(world.robot, world.arm_joints)
 
-    closed_handle_config = get_goal_config(world, ee_start_config, handle_pose_closed, goal_radius=0.2, ik_time=0.5)
-    
+    #closed_handle_config = get_goal_config(world, ee_start_config, handle_pose_closed, goal_radius=0.2, ik_time=0.5)
     tool_link = link_from_name(world.robot, 'panda_hand')
-
-    #goal_pose = [list(start_pose[0]), list(start_pose[1])]
-    #goal_pose[0][0] = float(goal_pose[0][0])+float(0.1)
     ee_start_pose = get_link_pose(world.robot, tool_link)
     goal_pose = get_handle_position(world, is_open=True)
     
     # move to the start config
     
-    ee_corrected_pos = get_joint_positions(world.robot, world.arm_joints)
-    
-    # eee=[]
-    # correction = []
-    # for i in range(len(ee_start_pose[0])):
-    #     eee.append(handle_pose_closed[0][i]-ee_start_pose[0][i])
-    #     correction.append[ee_corrected_pos[0][i] - ee_start_pose[0][i]]
-    # eeetot = (sum([x**2 for x in eee]))
-
-    #print(f"EE_ERROR={eeetot}, {eee} \nEE_START_POSE={ee_start_pose} \nHANDLE_START_POSE={handle_pose_closed} \nGOAL_POSE = {goal_pose}\n\n")
-
-
+    #ee_corrected_pos = get_joint_positions(world.robot, world.arm_joints)
     goal_conf = get_goal_config(world, ee_start_config, goal_pose, goal_radius=0.05, ik_time=0.025)
 
     surface_name = 'indigo_drawer_top'
@@ -187,24 +136,11 @@ def open_drawer(world):
     item_in_hand = surface #world.body_from_name['potted_meat_can1']
     end_conf = move(world, [goal_conf], item_in_hand, sleep_time=0.005)
 
-    end_pose= tool_pose_from_config(world.robot, end_conf)
-
-    # e1 = []
-    # etot = 0
-    # dist= []
-    # eee=[]
-    # for i in range(len(goal_pose[0])):
-    #     eee.append(handle_pose_closed[0][i]-ee_start_pose[0][i])
-    #     e1.append(goal_pose[0][i]-end_pose[0][i])
-    #     dist.append(ee_start_pose[0][i]-goal_pose[0][i])
-    # etot = (sum([x**2 for x in e1]))
-
-    #print(f"EE_ERROR={eee} \nSTART_POSE = {ee_start_pose}\nGOAL_POSE={goal_pose}\nEND_POSE={end_pose}\nERROR={etot},xyz={e1}\nDIST={dist}\n\n")
-
+    #end_pose= tool_pose_from_config(world.robot, end_conf)
     return end_conf
 
 
-# Move the arm in the world using RRT
+# Move the arm in the world by interpolating between end_confs
 def move(world, end_confs, item_in_hand=None, sleep_time=0.005):
     tool_link = link_from_name(world.robot, 'panda_hand')
     start_conf = get_joint_positions(world.robot, world.arm_joints)
@@ -224,14 +160,8 @@ def move(world, end_confs, item_in_hand=None, sleep_time=0.005):
             tool_pose_current = get_link_pose(world.robot, tool_link)
 
             if type(item_in_hand) == Surface:
-                #surface_name = 'indigo_drawer_top'
-                #surface = surface_from_name(surface_name)
                 drawer_joint = joint_from_name(world.kitchen,item_in_hand.joints[0])
-                #joint_position = get_joint_position(int(KITCHEN_BODY),drawer_joint)
                 set_joint_position(int(KITCHEN_BODY), drawer_joint, tool_pose_current[0][0] - tool_init_pose[0][0])
-
-                # world.open_door(drawer_link)
-                # #open_surface_joints(world, 'indigo_drawer_top')
 
             # Set position of other object in robot hand
             elif not item_in_hand == None:
