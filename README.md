@@ -21,7 +21,7 @@ cd part1
 python3 -B -m pddl_parser.PDDL domain.pddl problem.pddl -v
 
 
-PDDL Parser's inbuild planner on custom domain/problem:
+PDDL Parser's inbuilt planner on custom domain/problem:
 
 cd part1
 python3 -B -m pddl_parser.planner domain.pddl problem.pddl -v
@@ -31,7 +31,7 @@ python3 -B -m pddl_parser.planner domain.pddl problem.pddl -v
 ## Assumptions
 **Domain/Problem**
 - Robot can only hold a single item at a time.
-- The countertop, burner and drawer can each only hold a single item at a time (surfaces could be divided into multiple sections to allow each surface to hold multiple items, but this is not implemented yet).
+- The countertop, burner and drawer can each only hold a single item at a time (surfaces could be divided into multiple sections to allow each surface to hold multiple items, but this is not implemented as not required).
 - Draw is initially closed and must end closed.
 
 **Planner**
@@ -39,48 +39,61 @@ python3 -B -m pddl_parser.planner domain.pddl problem.pddl -v
 
 # Part 2
 ## Assumptions
- - When instructed to pick an item up by the planner, the robot will pick up said item (but it MUST be within a certain range)
- - Opening the drawer will work much the same way
+ - When instructed to interact with an item up by the planner, the robot base is assumed to be within the arm's reach (ensured by selecting a static a base position to start with where all objects can be reached)
+ - The gripper can grasp an object when it is within a certain small radius (e.g. 0.02 is used)
+
 ## Running
-To run the file, navagate to the `part2` directory, and run `python3 main.py`
- - For now, this is similar to the minimal_example.py, but we will break it down into pieces and implement an RRT for the motion planning and checking
+To run the file, navigate to the `part2` directory, and run `python3 main.py`
 
 ## Files
-Contained in part1 folder.
+- part1
+    - domain.PDDL
+        - kitchen domain defined in PDDL
+    - problem.PDDL
+        - move_boxes_kitchen problem defined in PDDL
+    - ff_planner.py
+        - Contains the "main" function to run the planner
+        - Syntax is based on interfacing with the pddl_parser's test planner
+        - Solver uses a simplified fast forward planner that:
+        a) Uses enforced hill climbing
+        b) Resorts to BFS at plateaus in h_FF     
+        c) Uses the relaxed planning graph to generate h_FF
+        d) Can only select a single action at each layer
+        e) Has a space to resort to A* search on EHC failure (when a dead-end is reached), but not implemented as this issue does not appear in our problem
+    - bfs_planner.py
+        - Uses breadth first search to solve the action planning problem
+        - Called from ff_planner at a plateau to finish the action plan (could call to just get off the plateau but operates quickly)
+- part2
+    - rrt.py
+        - Contains the core rrt solver and helper functions for different parts of rrt that can be substituted to allow the rrt solver to be used for different
+        motion planning problems (e.g. moving the base and moving the arm)
+        - Also contains a TreeNode class to store configs and parents in the RRT tree
+        - Finally, contains wrappers for rrt (e.g. rrt_arm_wrapper) that simplifies calling rrt for a specific purpose (e.g. moving the arm)
+    - utils.py 
+        - Useful utility functions to interact with the world (e.g. hardcoded base movements, getting positions of items in the world, converting between poses and configs etc.)
+    - execute_plan.py
+        - Defines the functions that map between the action planner (from part 1) and the motion planner (from part 2)
+        - Contains the "main" function to run the planner and the corresponding actions
+- part3
 
-- domain.PDDL
-- problem.PDDL
-- planner.py
-    - Syntax is based on interfacing with the pddl_parser's test planner
-    - Solver uses a simplified fast forward planner that:
-       a) Uses enforced hill climbing
-       b) Resorts to BFS at plateaus in h_FF     
-       c) Uses the related planning graph to generate h_FF
-       d) Can only select a single action at each layer
-       e) Resorts to A* search on EHC failure (when a dead-end is reached) - NOT YET IMPLEMENTED
 
 ## Challenges and Alternative Approaches
-- A graph plan was condsidered, where the action with the lowest ff heuristic was selected.
+- A graph plan was considered, where the action with the lowest ff heuristic was selected.
 - Our planner also has contingencies built in for when dead ends or a plateau are reached.
-- Adding ability to deal with negative goals and negative preconditions of actions as our problem formulation contains 
-
+- Added ability to deal with negative goals and negative preconditions of actions as our problem formulation contains actions with negative preconditions. This is done by keeping a list of "removed" propositions when finding the relaxed action plan.
 
 - Finding position of handle and position to move robot base to. "Hardcoded" these locations relative to drawer center.
-- No collision checking when base is moved - movement function and goal position designed for the kitchen such that no collisions will occur
-
-
-
-Goal sampling fxn
-- Need some way of generating a config from a (goal) pose (config_from_tool_pose) - waiting on Piazza response
+- Base movement is "hardcoded" rather than using RRT. This allows no collision checking when base is moved - movement function and goal position designed for the kitchen such that no collisions will occur.
 
 
 ### Current Issues
 - FF_Planner gives strange results in blocksworld pb4 - oscillates between pickup and putdown 
 - FF doesn't order by helpful actions (implemented but not used)
 
+- Collision checker visualizes when collision checking and so makes the simulation look spazzy
+
 
 TODO part 2:
-- Fix arm move back with drawer
 - Get countertop goal pose
 - Link to action planner
     - Update action planner
@@ -96,4 +109,4 @@ Collision fxn
 
 
 
--> detect_collision
+-> detect_collision CLIENT
