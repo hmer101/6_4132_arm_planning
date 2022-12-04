@@ -5,8 +5,6 @@ import numpy as np
 
 import utils
 
-sys.path.extend(os.path.abspath(os.path.join(os.getcwd(), 'padm-project=2022f', d)) for d in ['pddlstream', 'ss-pybullet'])
-
 from pybullet_tools.utils import get_joint_positions, set_joint_positions
 from src.utils import translate_linearly
 

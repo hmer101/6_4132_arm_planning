@@ -3,8 +3,6 @@ import math
 import os
 import sys
 
-sys.path.extend(os.path.abspath(os.path.join(os.getcwd(), 'padm-project=2022f', d)) for d in ['pddlstream', 'ss-pybullet'])
-sys.path.extend('pybullet')
 import gitmodules
 __import__('padm-project-2022f') 
 

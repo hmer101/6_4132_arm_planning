@@ -12,10 +12,12 @@ from pddl_parser.PDDL import PDDL_Parser
 import utils
 import execute_plan as ex_plan
 
-sys.path.extend(os.path.abspath(os.path.join(os.getcwd(), 'padm-project=2022f', d)) for d in ['pddlstream', 'ss-pybullet'])
+from pathlib import Path
+
+#sys.path.extend(os.path.abspath(os.path.join(os.getcwd(), 'padm-project=2022f', d)) for d in ['pddlstream', 'ss-pybullet'])
 
 import gitmodules
-__import__('padm-project-2022f') 
+__import__('padm-project-2022f')
 
 from pybullet_tools.utils import set_pose, Pose, Point, Euler, multiply, get_pose, get_point, create_box, set_all_static, WorldSaver, create_plane, COLOR_FROM_NAME, stable_z_on_aabb, pairwise_collision, elapsed_time, get_aabb_extent, get_aabb, create_cylinder, set_point, get_function_name, wait_for_user, dump_world, set_random_seed, set_numpy_seed, get_random_seed, get_numpy_seed, set_camera, set_camera_pose, link_from_name, get_movable_joints, get_joint_name
 from pybullet_tools.utils import CIRCULAR_LIMITS, get_custom_limits, set_joint_positions, interval_generator, get_link_pose, interpolate_poses, get_joint_positions, get_distance, get_angle, quat_combination, sub_inverse_kinematics, get_configuration, single_collision, link_pairs_collision, get_links
@@ -62,6 +64,8 @@ def rand_position(start_pose):
 
 
 def main():
+    print(sys.path)
+
     print('Random seed:', get_random_seed())
     print('Numpy seed:', get_numpy_seed())
 

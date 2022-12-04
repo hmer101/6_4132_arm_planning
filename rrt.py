@@ -7,11 +7,6 @@ from pybullet_tools.utils import set_joint_positions, interval_generator, get_cu
 from pybullet_tools.ikfast.franka_panda.ik import PANDA_INFO
 from pybullet_tools.ikfast.ikfast import get_ik_joints, closest_inverse_kinematics
 
-#REMOVE later
-import sys
-import os
-sys.path.extend(os.path.abspath(os.path.join(os.getcwd(), 'padm-project=2022f', d)) for d in ['pddlstream', 'ss-pybullet'])
-
 import gitmodules
 __import__('padm-project-2022f') 
 
