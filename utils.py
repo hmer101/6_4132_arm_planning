@@ -83,7 +83,9 @@ def get_pose_obj_goal(world, object_name):
     gripper_orient = [0,0,1,0] # Edit this for custom end gripper orientation
 
     if object_name == 'potted_meat_can1':
-        gripper_orient = [0,0,0,1]
+        #gripper_orient = [0,0,0,1]
+        gripper_euler = [math.pi,math.pi/2,0]
+        gripper_orient = quaternion_from_euler(gripper_euler[0], gripper_euler[1], gripper_euler[2]) 
     elif object_name == 'sugar_box0':
         gripper_orient = [0,0,1,0]
     
@@ -92,7 +94,7 @@ def get_pose_obj_goal(world, object_name):
     return gripper_pose
 
 # Get configuration from an end gripper pose
-def get_goal_config(world, start_config, end_pose, goal_radius=0.2, pose_step_size = 0.025, visualize=False, ik_time=0.025):
+def get_goal_config(world, start_config, end_pose, goal_radius=0.02, pose_step_size = 0.025, visualize=False, ik_time=0.025):
     tool_link = link_from_name(world.robot, 'panda_hand')
     ik_joints = get_ik_joints(world.robot, PANDA_INFO, tool_link)
 

@@ -30,7 +30,7 @@ from src.world import World
 from src.utils import JOINT_TEMPLATE, BLOCK_SIZES, BLOCK_COLORS, COUNTERS, \
     ALL_JOINTS, LEFT_CAMERA, CAMERA_MATRIX, CAMERA_POSES, CAMERAS, compute_surface_aabb, \
     BLOCK_TEMPLATE, name_from_type, GRASP_TYPES, SIDE_GRASP, joint_from_name, \
-    STOVES, TOP_GRASP, randomize, LEFT_DOOR, point_from_pose, translate_linearly, get_body_name, set_tool_pose, surface_from_name
+    STOVES, TOP_GRASP, randomize, LEFT_DOOR, point_from_pose, translate_linearly, get_body_name, set_tool_pose, surface_from_name, open_surface_joints
 
 
 
@@ -80,13 +80,21 @@ def main():
     tool_link = link_from_name(world.robot, 'panda_hand')
     ex_plan.action_navigate(world)
 
+    #open_surface_joints(world, 'indigo_drawer_top')
+    
+
     # Set up RRT
     handle_pose_closed = utils.get_handle_position(world, is_open=False)
     start_config = get_joint_positions(world.robot, world.arm_joints)
     conf_handle_closed = utils.get_goal_config(world, start_config, handle_pose_closed)
 
+    conf_meat_can = utils.get_goal_config(world,start_config,obj_pos_meat)
+
+
+    #utils.move(world, handle_pose_closed, item_in_hand=None, sleep_time=0.005)
+
     # Run RRT
-    config_path = rrt.rrt_arm_wrapper(start_config, conf_handle_closed, world.robot, world.arm_joints)
+    config_path = rrt.rrt_arm_wrapper(start_config, conf_meat_can, world.robot, world.arm_joints)
     end_conf = utils.move(world, config_path)
 
     wait_for_user()
@@ -113,6 +121,7 @@ def main():
 #     return mapping
 
 
+
 # def body_collision(body1, body2, max_distance=MAX_DISTANCE): # 10000
 #     # TODO: confirm that this doesn't just check the base link
 #     return len(p.getClosestPoints(bodyA=body1, bodyB=body2, distance=max_distance,
@@ -124,9 +133,6 @@ def main():
 #         body2, links2 = expand_links(body2)
 #         return any_link_pair_collision(body1, links1, body2, links2, **kwargs)
 #     return body_collision(body1, body2, **kwargs)
-
-# #def single_collision(body, max_distance=1e-3):
-# #    return len(p.getClosestPoints(body, max_distance=max_distance)) != 0
 
 # def single_collision(body1, **kwargs):
 #     for body2 in get_bodies():

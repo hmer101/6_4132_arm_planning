@@ -2,14 +2,15 @@ from random import random
 import time
 import utils
 
-from pybullet_tools.utils import set_joint_positions, interval_generator, get_custom_limits, CIRCULAR_LIMITS, get_distance, link_from_name, get_joint_positions, single_collision
+from pybullet_tools.utils import set_joint_positions, interval_generator, get_custom_limits, CIRCULAR_LIMITS, get_distance, link_from_name, get_joint_positions, single_collision, link_pairs_collision, get_all_links 
+from src.utils import surface_from_name
 
 from pybullet_tools.ikfast.franka_panda.ik import PANDA_INFO
 from pybullet_tools.ikfast.ikfast import get_ik_joints, closest_inverse_kinematics
 
 import gitmodules
 __import__('padm-project-2022f') 
-
+KITCHEN_BODY = 0
 
 class TreeNode(object):
 
@@ -52,15 +53,6 @@ def elapsed_time(start_time):
 
 ## RRT FUNCTIONS FOR ARM
 
-# def goal_sampling(world, start_conf, goal_pose, max_time=0.2):
-#     tool_link = link_from_name(world.robot, 'panda_hand')
-#     ik_joints = get_ik_joints(world.robot, PANDA_INFO, tool_link)
-#     set_joint_positions(world.robot, ik_joints, start_conf)
-#     conf = next(closest_inverse_kinematics(world.robot, PANDA_INFO, tool_link, goal_pose, max_time=max_time), None)
-#     set_joint_positions(world.robot, ik_joints, start_conf)
-#     return conf
-    
-
 # Returns a function for sampling the arm config space
 def get_sample_fn(body, joints, custom_limits={}, **kwargs):
     lower_limits, upper_limits = get_custom_limits(body, joints, custom_limits, circular_limits=CIRCULAR_LIMITS)
@@ -70,7 +62,7 @@ def get_sample_fn(body, joints, custom_limits={}, **kwargs):
     return fn
 
 # Tests if the current position is within a certain radius of the desired position
-def goal_test_pos(current_pos, goal_pos, radius=0.02):
+def goal_test_pos(current_pos, goal_pos, radius=0.02): #0.02
     if get_distance(current_pos, goal_pos) <= radius:
         return True
     else:
@@ -95,10 +87,10 @@ def detect_collision(robot_body, config):
     # Temporarily set to test configuration to test collisions
     set_joint_positions(robot_body, ik_joints, config)
 
-    # Check collisions
+    # Check collisions with kitchen
     if single_collision(robot_body) == True:    # Collision with any bodies in world
         collision = True
-    
+
     # SELF COLLISIONS
     #elif link_pairs_collision(robot_body, get_links(robot_body), robot_body, get_links(robot_body)): #pairwise_collision(robot_body, robot_body) == True: # Collision with self
      #   collision = True
@@ -123,7 +115,7 @@ def rrt_arm_wrapper(start_config, end_config, robot_body, arm_joints):
 
 
     config_path = rrt(robot_body, start, goal_sample, distance_fn, sample_fn, extend_fn, collision_fn, goal_test,
-        goal_probability=.2, max_iterations=20, max_time=float('inf'))
+        goal_probability=.2)
 
     return config_path
 
@@ -174,7 +166,7 @@ def rrt(robot_body, start, goal_sample, distance_fn, sample_fn, extend_fn, colli
                     break
 
             # If any config passes through the goal, return this config and parents
-            if goal_test(utils.tool_pose_from_config(robot_body, q)[0],utils.tool_pose_from_config(robot_body, goal_sample())[0]): # FIX THIS AND NEXT LINE -> Don't return interpolated points
+            if goal_test(utils.tool_pose_from_config(robot_body, q)[0],utils.tool_pose_from_config(robot_body, goal_sample())[0]):
                 # Add q as final tree node
                 last = TreeNode(q,parent = last) 
                 nodes.append(last)
