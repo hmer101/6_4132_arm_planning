@@ -3,6 +3,10 @@ import math
 import os
 import sys
 
+# UTILS.py
+
+sys.path.extend(os.path.abspath(os.path.join(os.getcwd(), 'padm-project=2022f', d)) for d in ['pddlstream', 'ss-pybullet'])
+sys.path.extend('pybullet')
 import gitmodules
 __import__('padm-project-2022f') 
 
@@ -45,6 +49,48 @@ def tool_pose_from_config(robot_body, config):
 
 
 ## FOR FINDING RRT GOAL POSES
+def get_drawer_center_position(world):
+    closed = get_handle_position(world, is_open=False)
+    open = get_handle_position(world, is_open=True)
+    xyz = []
+    for i in range(3):
+        xyz.append((open[0][i] + closed[0][i])/2)
+    xyz[2] += 0.2
+    return (xyz, open[1])
+
+# Get the position of the indigo drawer handle in the world
+def get_surface_position(world, surface_name):
+    # Get drawer centre pose
+    surface_link = link_from_name(KITCHEN_BODY,surface_name)
+    surface_pose = get_link_pose(KITCHEN_BODY, surface_link)
+
+    # Add drawer dimensions for handle pose
+    surface_surface =  compute_surface_aabb(world, surface_name)
+    # -math.pi, 0 , 0 = facing down
+    # 0, -math.pi, 0 = facing down
+    handle_euler = [math.pi,math.pi/2,0]
+    handle_q = quaternion_from_euler(handle_euler[0], handle_euler[1], handle_euler[2]) #list(drawer_pose[1])
+    handle_pose = (list(surface_pose[0]), handle_q) #Note not a deep copy as drawer pose thrown away
+    handle_pose[0][0] = float(surface_pose.upper[0]) + 0.1 # back for not colliding with the object on the counter/burner
+    handle_pose[0][2] = handle_pose[0][2] + 1.0 # up for countertop and burner
+    handle_pose = (tuple(handle_pose[0]), tuple(handle_pose[1]))
+    #handle_pose[0][]
+
+    return handle_pose
+
+def pose_error(p1,p2, to_print=True):
+    e = []
+    e[0] = []
+    e[1] = []
+    tots = []
+    for i in range(len(p1)):
+        for j in range(len(p2)):
+            e[i][j] = p1[i][j] - p2[i][j]
+        tots.append(sum(e[i])**0.5)
+    if to_print:
+        print(f'Errors={e}, totals={tots}')
+    return tots
+
 
 # Get the position of the indigo drawer handle in the world
 def get_handle_position(world, is_open):
@@ -57,12 +103,12 @@ def get_handle_position(world, is_open):
     handle_euler = [math.pi,math.pi/2,0]
     handle_q = quaternion_from_euler(handle_euler[0], handle_euler[1], handle_euler[2]) 
     handle_pose = (list(drawer_pose[0]), handle_q) #Note not a deep copy as drawer pose thrown away
-    handle_pose[0][0] = float(drawer_surface.upper[0]) + 0.1 
-
+    handle_pose[0][0] = drawer_surface.upper[0] + 0.2 # add to this value ot move 
+    handle_pose[0][2] = handle_pose[0][2] - 0.0 
     if is_open:
-        handle_pose[0][0] += 0.5 # if the drawer is open, the handle is this much further out
-
-    handle_pose[0][2] = handle_pose[0][2] - 0.1
+        handle_pose[0][0] += 0.5 #((0.4287344217300415, 1.0858064889907837, -0.6024341583251953), (0.7225275039672852, 0.36401623487472534, -0.5689088106155396, -0.14761091768741608))
+    
+    #handle_pose[1] = [0,0,0,1] 
     handle_pose = (tuple(handle_pose[0]), tuple(handle_pose[1]))
 
     return handle_pose
@@ -94,7 +140,7 @@ def get_pose_obj_goal(world, object_name):
     return gripper_pose
 
 # Get configuration from an end gripper pose
-def get_goal_config(world, start_config, end_pose, goal_radius=0.01, pose_step_size = 0.025, visualize=False, ik_time=0.025):
+def get_goal_config(world, start_config, end_pose, goal_radius=0.01, pose_step_size = 0.025, visualize=False, ik_time=0.1):
     tool_link = link_from_name(world.robot, 'panda_hand')
     ik_joints = get_ik_joints(world.robot, PANDA_INFO, tool_link)
 
@@ -113,32 +159,35 @@ def get_goal_config(world, start_config, end_pose, goal_radius=0.01, pose_step_s
 
 
 # Open the drawer
-def open_drawer(world):
+def open_the_drawer(world, surface):
+    
     # TODO Check that it is at the start pose before moving
     handle_pose_closed = get_handle_position(world, is_open=False)
 
     ee_start_config = get_joint_positions(world.robot, world.arm_joints)
 
-    #closed_handle_config = get_goal_config(world, ee_start_config, handle_pose_closed, goal_radius=0.2, ik_time=0.5)
+
+    
     tool_link = link_from_name(world.robot, 'panda_hand')
     ee_start_pose = get_link_pose(world.robot, tool_link)
-    goal_pose = get_handle_position(world, is_open=True)
-    
+
+    ee_end_pose = ((ee_start_pose[0][0]+0.5, ee_start_pose[0][1], ee_start_pose[0][2]),ee_start_pose[1])
+    goal_pose = ee_end_pose#get_handle_position(world, is_open=True)
     # move to the start config
     
-    #ee_corrected_pos = get_joint_positions(world.robot, world.arm_joints)
-    goal_conf = get_goal_config(world, ee_start_config, goal_pose, goal_radius=0.05, ik_time=0.025)
+    goal_conf = get_goal_config(world, ee_start_config, goal_pose, goal_radius=0.01, ik_time=0.1)
 
     surface_name = 'indigo_drawer_top'
     surface = surface_from_name(surface_name)
     
-    # Test "in hand"
     item_in_hand = surface #world.body_from_name['potted_meat_can1']
     end_conf = move(world, [goal_conf], item_in_hand, sleep_time=0.005)
 
-    #end_pose= tool_pose_from_config(world.robot, end_conf)
+    item_in_hand = None
     return end_conf
 
+def pose_offset(pose, x, y, z):
+    return ((pose[0][0]+x,pose[0][1]+y,pose[0][2]+z), pose[1])
 
 # Move the arm in the world by interpolating between end_confs
 def move(world, end_confs, item_in_hand=None, sleep_time=0.005):
@@ -147,9 +196,8 @@ def move(world, end_confs, item_in_hand=None, sleep_time=0.005):
     ik_joints = get_ik_joints(world.robot, PANDA_INFO, tool_link)
 
     tool_init_pose = get_link_pose(world.robot, tool_link)
-
+    tool_pose_current = None
     for confs in end_confs:
-        print("\n\nDOING CONFIG")
         for conf in interpolate_configs(start_conf, confs):
             time.sleep(sleep_time)
 
@@ -182,8 +230,10 @@ def get_base_goal_position(world):
     # Add drawer and robot dimensions for left edge
     drawer_surface =  compute_surface_aabb(world, 'indigo_drawer_top')
     goal_position = list(drawer_pose[0]) # Note not a deep copy as drawer pose thrown away
-    goal_position[0] = float(drawer_surface.upper[0]) + 0.4 #approximate robot width = 0.2                 
-    goal_position[1] = float(drawer_surface.lower[1]) - 0.2 
+    #offset = [0.4, -0.2]
+    offset = [0.3, -0.1]
+    goal_position[0] = float(drawer_surface.upper[0]) + offset[0] #approximate robot width = 0.2                 
+    goal_position[1] = float(drawer_surface.lower[1]) + offset[1]
 
     return tuple(goal_position[0:2])
 

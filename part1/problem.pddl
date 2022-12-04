@@ -6,7 +6,8 @@
     (:objects
         spam_box sugar_box - item
         burner countertop - surface
-        indigo_drawer_top - drawer
+        indigo_drawer - drawer
+        indigo_drawer_handle - item_holder_manipulator
         franka - robot
     )
     (:init
@@ -18,12 +19,13 @@
         (item-in-holder spam_box countertop)
         (item-holder-full burner)
         (item-holder-full countertop)
-        (item-holder-closed indigo_drawer_top)
+        (item-holder-closed indigo_drawer)
+        (can-manipulate indigo_drawer_handle indigo_drawer)
 
     )
     (:goal (and
         (item-in-holder sugar_box countertop)
-        (item-in-holder spam_box  indigo_drawer_top)
-        (item-holder-closed indigo_drawer_top)
+        (item-in-holder spam_box  indigo_drawer)
+        (item-holder-closed indigo_drawer)
     ))
 )
