@@ -97,7 +97,7 @@ def get_sample_fn(body, joints, custom_limits={}, **kwargs):
     return fn
 
 # Tests if the current position is within a certain radius of the desired position
-def goal_test_pos(current_pos, goal_pos, radius=0.02):
+def goal_test_pos(current_pos, goal_pos, radius=0.01):
     if get_distance(current_pos, goal_pos) <= radius:
         return True
     else:
