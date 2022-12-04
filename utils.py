@@ -54,17 +54,14 @@ KITCHEN_BODY = 0
 #     return out_config
 
 
+
+## HELPER FUNCTIONS
 # converted this function from a generator to returning a list
 def interpolate_configs(start_config, end_config, config_step_size=0.01):
     num_steps = int(math.ceil(get_distance(start_config, end_config)/config_step_size))
     configs = [ (1-(float(i)/num_steps))*np.array(start_config) + (float(i)/num_steps)*np.array(end_config) for i in range(num_steps) ]
     return configs
-    
 
-
-
-
-#### ALL BELOW ARE TESTED AND WORKING
 
 # Find the pose of the tool from a given config 
 def tool_pose_from_config(robot_body, config):
@@ -110,7 +107,28 @@ def get_handle_position(world, is_open):
     return handle_pose
 
 
+# Change the orientation in a pose to a new pose
+def pose_change_orient(orig_pose, new_orient):
+    new_pose = (list(orig_pose[0]), new_orient)
 
+    return new_pose
+
+# Get the pose of an object in the world, modifying the orientation for the gripper
+def get_pose_obj_goal(world, object_name):
+    obj_body = world.body_from_name[object_name]
+    body_pose = get_pose(obj_body)
+
+    # Replace gripper orientation with custom orientation determined by object
+    gripper_orient = [0,0,1,0] # Edit this for custom end gripper orientation
+
+    if object_name == 'potted_meat_can1':
+        gripper_orient = [0,0,0,1]
+    elif object_name == 'sugar_box0':
+        gripper_orient = [0,0,1,0]
+    
+    gripper_pose = pose_change_orient(body_pose, gripper_orient)
+
+    return gripper_pose
 
 
 def get_goal_config(world, start_config, end_pose, goal_radius=0.2, pose_step_size = 0.025, visualize=False, ik_time=0.025):
@@ -131,14 +149,7 @@ def get_goal_config(world, start_config, end_pose, goal_radius=0.2, pose_step_si
     return None
 
 
-
-# Change the orientation in a pose to a new pose
-def pose_change_orient(orig_pose, new_orient):
-    new_pose = (list(orig_pose[0]), new_orient)
-
-    return new_pose
-
-
+# Open the drawer
 def open_the_drawer(world, surface):
     
     # TODO Check that it is at the start pose before moving
@@ -165,9 +176,12 @@ def open_the_drawer(world, surface):
     
     item_in_hand = surface #world.body_from_name['potted_meat_can1']
     end_conf = move(world, [goal_conf], item_in_hand, sleep_time=0.005)
+
     item_in_hand = None
     return end_conf
 
+
+# Move the arm in the world using RRT
 def move(world, end_confs, item_in_hand=None, sleep_time=0.005):
     tool_link = link_from_name(world.robot, 'panda_hand')
     start_conf = get_joint_positions(world.robot, world.arm_joints)
@@ -201,23 +215,6 @@ def move(world, end_confs, item_in_hand=None, sleep_time=0.005):
                 set_pose(item_in_hand, tool_pose_current)
 
     return get_joint_positions(world.robot, world.arm_joints)
-
-# Get the pose of an object in the world, modifying the orientation for the gripper
-def get_pose_obj_goal(world, object_name):
-    obj_body = world.body_from_name[object_name]
-    body_pose = get_pose(obj_body)
-
-    # Replace gripper orientation with custom orientation determined by object
-    gripper_orient = [0,0,1,0] # Edit this for custom end gripper orientation
-
-    if object_name == 'potted_meat_can1':
-        gripper_orient = [0,0,0,1]
-    elif object_name == 'sugar_box0':
-        gripper_orient = [0,0,1,0]
-    
-    gripper_pose = pose_change_orient(body_pose, gripper_orient)
-
-    return gripper_pose
 
 
 ## FOR BASE MOVEMENT
