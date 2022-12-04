@@ -187,13 +187,28 @@ def main():
     start_config = get_joint_positions(world.robot, world.arm_joints)
     conf_handle_closed = utils.get_goal_config(world, start_config, handle_pose_closed)
 
-    end_conf = utils.move(world, [conf_handle_closed], None, sleep_time=0.005)
+    # end_conf = utils.move(world, [conf_handle_closed], None, sleep_time=0.005)
 
-    print("Did first move")
-    wait_for_user()
-    utils.open_drawer(world)
-    print("Opened drawer")
-    wait_for_user()
+    # print("Did first move")
+    # wait_for_user()
+    # utils.open_drawer(world)
+    # print("Opened drawer")
+    # wait_for_user()
+
+    # start = start_config
+    # goal_sample = conf_handle_closed
+    # distance_fn = get_distance
+    # sample_fn = rrt.get_sample_fn(world.robot, world.arm_joints)
+    # extend_fn = rrt.extend #utils.interpolate_configs
+    # collision_fn = rrt.detect_collision
+    # goal_test = rrt.goal_test_pos
+
+
+    # config_path = rrt.rrt(world, world.robot, start, goal_sample, distance_fn, sample_fn, extend_fn, collision_fn, goal_test,
+    #     goal_probability=.2, max_iterations=20, max_time=float('inf'), visualize=True)
+
+    config_path = rrt.rrt_arm_wrapper(start_config, conf_handle_closed, world.robot, world.arm_joints)
+    end_conf = utils.move(world, config_path)
 
     # surface_name = 'indigo_drawer_top'
     # surface = surface_from_name(surface_name)

@@ -26,7 +26,7 @@ class TreeNode(object):
         sequence = []
         node = self
         while node is not None:
-            sequence.append(node)
+            sequence.append(node.config)
             node = node.parent
         return sequence[::-1]
 
@@ -95,7 +95,7 @@ def get_sample_fn(body, joints, custom_limits={}, **kwargs):
     return fn
 
 # Tests if the current position is within a certain radius of the desired position
-def goal_test_pos(current_pos, goal_pos, radius=0.5):
+def goal_test_pos(current_pos, goal_pos, radius=0.02):
     if get_distance(current_pos, goal_pos) <= radius:
         return True
     else:
@@ -136,13 +136,29 @@ def detect_collision(robot_body, config):
 
 ## RRT
 
+# Wrapper to perform RRT on the arm from a start to an end config
+def rrt_arm_wrapper(start_config, end_config, robot_body, arm_joints):
+    start = start_config
+    goal_sample = end_config
+    distance_fn = get_distance
+    sample_fn = get_sample_fn(robot_body, arm_joints)
+    extend_fn = extend #utils.interpolate_configs
+    collision_fn = detect_collision
+    goal_test = goal_test_pos
+
+
+    config_path = rrt(robot_body, start, goal_sample, distance_fn, sample_fn, extend_fn, collision_fn, goal_test,
+        goal_probability=.2, max_iterations=20, max_time=float('inf'), visualize=True)
+
+    return config_path
+
 
 # Performs RRT from start to a goal pos
 # Note that this returns the configuration sequence to traverse from the start to the goal but does not visualise this 
 # (need to do something like set_joint_positions(interpolate_configs(configs)) on return)
 
-# REMOVE: world, obstacles, goal_pose or goal_sample?
-def rrt(world, robot_body, obstacles, start, goal_pose, goal_sample, distance_fn, sample_fn, extend_fn, collision_fn, goal_test=lambda q: False,
+#REMOVE: vizualize
+def rrt(robot_body, start, goal_sample, distance_fn, sample_fn, extend_fn, collision_fn, goal_test=lambda q: False,
         goal_probability=.2, max_iterations=20, max_time=float('inf'), visualize=True):
     """
     :param start: Start configuration - conf
@@ -155,37 +171,37 @@ def rrt(world, robot_body, obstacles, start, goal_pose, goal_sample, distance_fn
     :return: Path [q', ..., q"] or None if unable to find a solution
     """
     start_time = time.time()
-    goal_sampling_time = 0.5
-    max_goal_sampling_time = 3
-    if collision_fn(robot_body, start.config):
+    #goal_sampling_time = 0.5
+    #max_goal_sampling_time = 3
+    if collision_fn(robot_body, start):
         return None
-    # if not callable(goal_sample):
-    #     g = goal_sample
-    #     goal_sample = lambda: g
-    nodes = [(start)]
+    if not callable(goal_sample):
+        g = goal_sample
+        goal_sample = lambda: g
+    nodes = [TreeNode(start)]
     for i in irange(max_iterations):
         if elapsed_time(start_time) >= max_time:
             break
         goal = random() < goal_probability or i == 0
 
         # Sample. Try sampling from goal randomly - return a normal sample if unable to 
-        #s = goal_sample() if goal else sample_fn()
-        s = sample_fn()
-        if goal:
-            # Pick a random node: NOTE: TRY TO ONLY PICK CLOSEST NODES THAT HAVEN'T BEEN PICKED YET
-            random_node = nodes[int(random()*len(nodes))]
-            # Add dynamic goal sampling time (ex: number of times a node was selected increases goal sampling time)
+        s = goal_sample() if goal else sample_fn()
+        #s = sample_fn()
+        # if goal:
+        #     # Pick a random node: NOTE: TRY TO ONLY PICK CLOSEST NODES THAT HAVEN'T BEEN PICKED YET
+        #     random_node = nodes[int(random()*len(nodes))]
+        #     # Add dynamic goal sampling time (ex: number of times a node was selected increases goal sampling time)
             
 
-            #test_conf = goal_sampling(world, random_node.config, goal_pose, max_time=goal_sampling_time)
-            test_conf = utils.config_from_pose(robot_body, goal_pose, max_time=goal_sampling_time)
+        #     #test_conf = goal_sampling(world, random_node.config, goal_pose, max_time=goal_sampling_time)
+        #     test_conf = utils.config_from_pose(robot_body, goal_pose, max_time=goal_sampling_time)
 
-            if test_conf == None:
-                goal_sampling_time = min(max_goal_sampling_time, 1.2*goal_sampling_time)
-                print(f"new goal_sampling_time={goal_sampling_time}")
-                continue
-            print("Goal conf found!")
-            s = test_conf
+        #     if test_conf == None:
+        #         goal_sampling_time = min(max_goal_sampling_time, 1.2*goal_sampling_time)
+        #         print(f"new goal_sampling_time={goal_sampling_time}")
+        #         continue
+        #     print("Goal conf found!")
+        #     s = test_conf
 
 
         #         # 
@@ -200,12 +216,18 @@ def rrt(world, robot_body, obstacles, start, goal_pose, goal_sample, distance_fn
                 valid = False
                 break
 
-            if visualize:
-            # Temporarily visualise RRT functioning
-                set_joint_positions(robot_body, world.arm_joints, last.config)
+            # if visualize:
+            # # Temporarily visualise RRT functioning
+            #     set_joint_positions(robot_body, world.arm_joints, q)
+            #     time.sleep(0.005)
 
-            if goal_test(utils.tool_pose_from_config(robot_body, last.config)[0],goal_pose[0]):
-                return configs(last.retrace())
+            # If any config passes through the goal, return this config and parents
+            if goal_test(utils.tool_pose_from_config(robot_body, q)[0],utils.tool_pose_from_config(robot_body, goal_sample())[0]): # FIX THIS AND NEXT LINE -> Don't return interpolated points
+                # Add q as final tree node
+                last = TreeNode(q,parent = last) 
+                nodes.append(last)
+                
+                return last.retrace()
         
         
         if valid:
