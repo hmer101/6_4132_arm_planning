@@ -1,3 +1,5 @@
+# MAIN.py
+
 from __future__ import print_function
 
 import os
@@ -12,6 +14,8 @@ from pddl_parser.PDDL import PDDL_Parser
 import utils
 
 sys.path.extend(os.path.abspath(os.path.join(os.getcwd(), 'padm-project=2022f', d)) for d in ['pddlstream', 'ss-pybullet'])
+sys.path.insert(0,os.path.abspath(os.path.join(os.getcwd(), 'part1')))
+from ff_planner import FF_Planner
 
 import gitmodules
 __import__('padm-project-2022f') 
@@ -172,6 +176,81 @@ def main():
     spam_box = add_spam_box(world, idx=1, counter=0, pose2d=(0.2, 1.1, np.pi / 4))
     obj_pos_meat = utils.get_pose_obj_goal(world, 'potted_meat_can1') 
     obj_pos_sugar = utils.get_pose_obj_goal(world, 'sugar_box0')
+    
+    
+
+    franka_name = 'franka'
+    indigo_drawer_name = 'indigo_drawer_top'
+    burner_name = 'burner'
+    countertop_name = 'contertop'
+    KITCHEN_BODY = 0
+    item_in_hand = dict()
+    is_open = dict()
+    is_open[indigo_drawer_name] = False
+    item_in_hand[franka_name] = None
+    
+    def get_robot(robot_name):
+        if robot_name == 'franka':
+            return world.robot
+
+    def get_pose(end_location):
+        if end_location == burner_name:
+            return 
+        if end_location == indigo_drawer_name:
+            utils.get_handle_position(world, is_open[indigo_drawer_name])
+            return get_drawer_pose(end_location) #TODO CHECK THIS FUNCTION
+        if end_location == countertop_name:
+            return
+
+    def get_drawer_link(drawer_name):
+        return link_from_name(KITCHEN_BODY,drawer_name)
+
+    def get_drawer_pose(drawer_name):
+        return get_link_pose(KITCHEN_BODY, get_drawer_link(drawer_name))
+    
+    def get_surface(surface_name):
+        return surface_from_name(indigo_drawer_name)
+
+    def navigate(robot_name, start_location, end_location):
+        robot = get_robot(robot_name)
+        end_pose = get_pose(end_location)
+        start_pose = get_pose(start_location)
+        # TODO Check that the start_pose and current robot pose are close
+        end_confs = 0 # IMPLEMENT RRT HERE
+        utils.move(world, end_confs, item_in_hand=item_in_hand[robot_name], sleep_time=0.005)
+    
+    def open_drawer(robot_name, drawer_name):
+        robot = get_robot(robot_name)
+        surface = get_surface(drawer_name)
+        utils.open_the_drawer(world, surface)
+        is_open[drawer_name] = True
+
+    def pick_up (robot_name, item_name):
+        item_in_hand[robot_name] = item_name
+
+    def place (robot_name, item_name, surface_name):
+        item_in_hand[robot_name] = None
+
+
+    # TODO
+    def close_drawer (robot_name, drawer_name):
+        robot = get_robot(robot_name)
+        surface = get_surface(drawer_name)
+        #utils.close_the_drawer(world, surface)
+        is_open[drawer_name] = False
+
+    def perform_action (name, params):
+        a = name
+        if a == 'open-drawer':
+            open_drawer(params[0],params[1])
+        if a == 'navigate':
+            navigate(params[0],params[1],params[2])
+        if a == 'pick-up':
+            pick_up(params[0],params[1])
+        if a == 'place':
+            place(params[0],params[1],params[2])
+        if a == 'close_drawer':
+            close_drawer(params[0],params[1])
 
     # wait_for_user()
     world._update_initial()
@@ -185,10 +264,28 @@ def main():
 
     handle_pose_closed = utils.get_handle_position(world, is_open=False)
     start_config = get_joint_positions(world.robot, world.arm_joints)
+
+    dirname = os.path.abspath(os.path.join(os.getcwd(), 'part1'))
+    domain = os.path.join(dirname,'domain.pddl') #dinner blocksworld.pddl domain.pddl
+    problem = os.path.join(dirname,'problem.pddl') #pb1_dinner pb4_blocksworld.pddl problem.pddl
+    planner = FF_Planner(domain, problem)
+    plan = planner.solve()
+
+    if type(plan) is list:
+        print('EXECUTING PLAN:')
+        for act in plan:
+            print((act.name) + ' ' + ' '.join(act.parameters))
+            
+            perform_action(act.name, act.parameters)
+    else:
+        print('No plan was found')
+        exit(1)
+
+
     conf_handle_closed = utils.get_goal_config(world, start_config, handle_pose_closed)
-
+    
     end_conf = utils.move(world, [conf_handle_closed], None, sleep_time=0.005)
-
+    
     print("Did first move")
     wait_for_user()
     utils.open_drawer(world)

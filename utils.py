@@ -3,6 +3,8 @@ import math
 import os
 import sys
 
+# UTILS.py
+
 sys.path.extend(os.path.abspath(os.path.join(os.getcwd(), 'padm-project=2022f', d)) for d in ['pddlstream', 'ss-pybullet'])
 sys.path.extend('pybullet')
 import gitmodules
@@ -137,7 +139,7 @@ def pose_change_orient(orig_pose, new_orient):
     return new_pose
 
 
-def open_drawer(world):
+def open_the_drawer(world, surface):
     
     # TODO Check that it is at the start pose before moving
     handle_pose_closed = get_handle_position(world, is_open=False)
@@ -151,45 +153,19 @@ def open_drawer(world):
     #goal_pose = [list(start_pose[0]), list(start_pose[1])]
     #goal_pose[0][0] = float(goal_pose[0][0])+float(0.1)
     ee_start_pose = get_link_pose(world.robot, tool_link)
-    goal_pose = get_handle_position(world, is_open=True)
-    
+
+    ee_end_pose = ((ee_start_pose[0][0]+0.5, ee_start_pose[0][1], ee_start_pose[0][2]),ee_start_pose[1])
+    goal_pose = ee_end_pose#get_handle_position(world, is_open=True)
     # move to the start config
     
-    ee_corrected_pos = get_joint_positions(world.robot, world.arm_joints)
-    
-    # eee=[]
-    # correction = []
-    # for i in range(len(ee_start_pose[0])):
-    #     eee.append(handle_pose_closed[0][i]-ee_start_pose[0][i])
-    #     correction.append[ee_corrected_pos[0][i] - ee_start_pose[0][i]]
-    # eeetot = (sum([x**2 for x in eee]))
-
-    #print(f"EE_ERROR={eeetot}, {eee} \nEE_START_POSE={ee_start_pose} \nHANDLE_START_POSE={handle_pose_closed} \nGOAL_POSE = {goal_pose}\n\n")
-
-
     goal_conf = get_goal_config(world, ee_start_config, goal_pose, goal_radius=0.05, ik_time=0.025)
 
-    surface_name = 'indigo_drawer_top'
-    surface = surface_from_name(surface_name)
+    #surface_name = 'indigo_drawer_top'
+    #surface = surface_from_name(surface_name)
     
-    # Test "in hand"
     item_in_hand = surface #world.body_from_name['potted_meat_can1']
     end_conf = move(world, [goal_conf], item_in_hand, sleep_time=0.005)
-
-    end_pose= tool_pose_from_config(world.robot, end_conf)
-
-    # e1 = []
-    # etot = 0
-    # dist= []
-    # eee=[]
-    # for i in range(len(goal_pose[0])):
-    #     eee.append(handle_pose_closed[0][i]-ee_start_pose[0][i])
-    #     e1.append(goal_pose[0][i]-end_pose[0][i])
-    #     dist.append(ee_start_pose[0][i]-goal_pose[0][i])
-    # etot = (sum([x**2 for x in e1]))
-
-    #print(f"EE_ERROR={eee} \nSTART_POSE = {ee_start_pose}\nGOAL_POSE={goal_pose}\nEND_POSE={end_pose}\nERROR={etot},xyz={e1}\nDIST={dist}\n\n")
-
+    item_in_hand = None
     return end_conf
 
 def move(world, end_confs, item_in_hand=None, sleep_time=0.005):
