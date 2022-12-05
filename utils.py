@@ -20,6 +20,7 @@ from src.utils import compute_surface_aabb, open_surface_joints, surface_from_na
 import rrt
 import time
 KITCHEN_BODY = 0
+D_LENGTH = 0.5
 
 
 ## HELPER FUNCTIONS
@@ -105,8 +106,8 @@ def get_handle_position(world, is_open):
     handle_pose = (list(drawer_pose[0]), handle_q) #Note not a deep copy as drawer pose thrown away
     handle_pose[0][0] = drawer_surface.upper[0] + 0.2 # add to this value ot move 
     handle_pose[0][2] = handle_pose[0][2] - 0.0 
-    if is_open:
-        handle_pose[0][0] += 0.5 #((0.4287344217300415, 1.0858064889907837, -0.6024341583251953), (0.7225275039672852, 0.36401623487472534, -0.5689088106155396, -0.14761091768741608))
+    #if is_open:
+    #    handle_pose[0][0] += D_LENGTH #((0.4287344217300415, 1.0858064889907837, -0.6024341583251953), (0.7225275039672852, 0.36401623487472534, -0.5689088106155396, -0.14761091768741608))
     
     #handle_pose[1] = [0,0,0,1] 
     handle_pose = (tuple(handle_pose[0]), tuple(handle_pose[1]))
@@ -171,8 +172,9 @@ def open_the_drawer(world, surface):
     tool_link = link_from_name(world.robot, 'panda_hand')
     ee_start_pose = get_link_pose(world.robot, tool_link)
 
-    ee_end_pose = ((ee_start_pose[0][0]+0.5, ee_start_pose[0][1], ee_start_pose[0][2]),ee_start_pose[1])
+    ee_end_pose = ((ee_start_pose[0][0]+D_LENGTH, ee_start_pose[0][1], ee_start_pose[0][2]),ee_start_pose[1])
     goal_pose = ee_end_pose#get_handle_position(world, is_open=True)
+    print(f"DRAWER_OPEN_POSE={goal_pose}")
     # move to the start config
     
     goal_conf = get_goal_config(world, ee_start_config, goal_pose, goal_radius=0.01, ik_time=0.1)

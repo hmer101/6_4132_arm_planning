@@ -110,9 +110,8 @@ def main():
     handle_pose_closed = utils.get_handle_position(world, is_open=False)
 
     pos_indigo_drawer_center = utils.get_drawer_center_position(world)
-    start_config = get_joint_positions(world.robot, world.arm_joints)
-    global current_conf
-    current_conf = start_config
+    current_conf = get_joint_positions(world.robot, world.arm_joints)
+    pre_render = False
     
     def get_robot(robot_name):
         if robot_name == 'franka':
@@ -130,6 +129,8 @@ def main():
             return pos_indigo_drawer_center
         if end_location_name == countertop_name:
             return pos_counter
+        if end_location_name == 'nowhere': # If the robot is nowhere of significance, just return its init config
+            return utils.tool_pose_from_config(world.robot, get_joint_positions(world.robot, world.arm_joints))
             #return utils.get_surface_position(world, 'indigo_tmp')
 
     def get_drawer_link(drawer_name):
@@ -143,39 +144,45 @@ def main():
 
     def navigate(robot_name, start_location, end_location):
         robot = get_robot(robot_name)
+        
         end_pose = planner_get_pose(end_location)
         if end_pose == None:
             print(f"Error! No end_pose found for {end_location}")
             wait_for_user()
         start_pose = planner_get_pose(start_location)
-        global current_conf
+        
         # TODO Check that the start_pose and current robot pose are close
-        current_pose = utils.tool_pose_from_config(world.robot, current_conf)
+        current_pose = utils.tool_pose_from_config(world.robot, get_joint_positions(world.robot, world.arm_joints))
 
         
         c_sq = 0
         for i in range(len(current_pose[0])):
             c_sq += (current_pose[0][i] - start_pose[0][i])**2
         if c_sq >= 0.21:
-            print (f"ERROR! ROBOT NOT AT START POSE!\nPose={current_pose}\nStart={start_pose}")
+            print (f"ERROR! ROBOT NOT AT START POSE!\ntool_pose_from_config={current_pose}\nstart_pose={start_pose}")
             wait_for_user()
         else:
             print ("Navigate ok. Robot near start pose...")
 
-        end_config = utils.get_goal_config(world, current_conf, end_pose, ik_time=0.1)
+        end_config = utils.get_goal_config(world, get_joint_positions(world.robot, world.arm_joints), end_pose, ik_time=0.1)
 
         
         if end_config == None:
-            print ("ERROR! No end config found! Exiting program")
+            print (f"No end config found for goal_pose={end_pose}! Trying again with larger ik time before exiting program")
+            end_config = utils.get_goal_config(world, get_joint_positions(world.robot, world.arm_joints), end_pose, ik_time=0.5)
+            if end_config == None:
+                print ("ERROR! No end config found! Exiting program")
+                wait_for_user()
+        
+        if pre_render:
+            save = get_joint_positions(world.robot, world.arm_joints)
+            print("End config found and shown.")
+            set_joint_positions(world.robot, world.arm_joints, end_config)
             wait_for_user()
-        save = get_joint_positions(world.robot, world.arm_joints)
-        print("End config found and shown.")
-        set_joint_positions(world.robot, world.arm_joints, end_config)
-        wait_for_user()
-        set_joint_positions(world.robot, world.arm_joints, save)
+            set_joint_positions(world.robot, world.arm_joints, save)
         
         
-        config_path = rrt.rrt_arm_wrapper(current_conf, end_config, world.robot, world.arm_joints)
+        config_path = rrt.rrt_arm_wrapper(get_joint_positions(world.robot, world.arm_joints), end_config, world.robot, world.arm_joints)
         if config_path == None:
             print ("ERROR! No config_path found! Exiting program")
             wait_for_user()
@@ -194,12 +201,44 @@ def main():
         current_conf = utils.open_the_drawer(world,surface)
         
         is_open[drawer_name] = True
+        print(f"DRAWER_OPEN_CONFIG={current_conf}")
+
+    def body_name_from_item_name(item_name):
+        if item_name == 'spam_box':
+            return 'potted_meat_can1'
+        if item_name == 'sugar_box':
+            return 'sugar_box0'
+
+    def body_from_item_name(item_name):
+        return world.body_from_name[body_name_from_item_name(item_name)]
 
     def pick_up (robot_name, item_name):
-        item_in_hand[robot_name] = item_name
+        body = body_from_item_name(item_name)
+        item_in_hand[robot_name] = body
+
 
     def place (robot_name, item_name, surface_name):
+        pose = None
+        if surface_name == indigo_drawer_center_name:
+            drawer_link = link_from_name(KITCHEN_BODY,'indigo_drawer_top')
+            pose = get_link_pose(KITCHEN_BODY, drawer_link)
+        else:
+            sname = get_surface_name(surface_name)
+            my_surf = surface_from_name(sname)
+            pose = utils.get_surface_position(world, my_surf)
+        
+
+
+
+        set_pose(item_in_hand[robot_name], pose)
+        #body_name = body_name_from_item_name(item_name)
+        #their_surface_name = convert_surface_name(surface_name)
+        #pose2d_on_surface(world, body_name, their_surface_name)
         item_in_hand[robot_name] = None
+
+    def convert_surface_name(surface_name):
+        if surface_name == indigo_drawer_center_name:
+            return 'indigo_drawer_bottom'
 
     # TODO
     def close_drawer (robot_name, drawer_name):
