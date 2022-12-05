@@ -1,6 +1,4 @@
 import time
-import sys
-import os
 import numpy as np
 import rrt
 
@@ -13,7 +11,6 @@ from pybullet_tools.utils import set_joint_positions, get_link_pose, get_joint_p
 
 from pybullet_tools.ikfast.franka_panda.ik import PANDA_INFO
 from pybullet_tools.ikfast.ikfast import get_ik_joints
-#from pybullet_tools.transformations import quaternion_from_euler, euler_from_quaternion
 
 from src.world import World
 from src.utils import COUNTERS, compute_surface_aabb, name_from_type, translate_linearly, surface_from_name
