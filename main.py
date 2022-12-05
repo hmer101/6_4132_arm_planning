@@ -76,6 +76,8 @@ def main():
     print('Random seed:', get_random_seed())
     print('Numpy seed:', get_numpy_seed())
 
+    GRIPPER_OFFSETS = (0.2, 0, 0.05)
+
     np.set_printoptions(precision=3, suppress=True)
     world = World(use_gui=True)
     sugar_box = add_sugar_box(world, idx=0, counter=1, pose2d=(-0.2, 0.65, np.pi / 4))
@@ -83,9 +85,9 @@ def main():
     obj_pos_meat = utils.get_pose_obj_goal(world, 'potted_meat_can1')
     obj_pos_sugar = utils.get_pose_obj_goal(world, 'sugar_box0')
     global pos_counter
-    pos_counter = utils.pose_offset(obj_pos_meat, 0.2, 0.0, 0.05)
+    pos_counter = utils.pose_offset(obj_pos_meat, GRIPPER_OFFSETS[0], GRIPPER_OFFSETS[1], GRIPPER_OFFSETS[2])
     global pos_burner
-    pos_burner = utils.pose_offset(obj_pos_sugar, 0.2, 0.0, 0.05)
+    pos_burner = utils.pose_offset(obj_pos_sugar, GRIPPER_OFFSETS[0], GRIPPER_OFFSETS[1], GRIPPER_OFFSETS[2]+0.05)
     franka_name = 'franka'
     indigo_drawer_handle_name = 'indigo_drawer_handle'
     indigo_drawer_center_name = 'indigo_drawer'
@@ -119,6 +121,9 @@ def main():
             return world.robot
 
     def planner_get_pose(end_location_name):
+        # if surface_name == indigo_drawer_center_name:
+        #     drawer_link = link_from_name(KITCHEN_BODY,'indigo_drawer_top')
+        #     pose = get_link_pose(KITCHEN_BODY, drawer_link)
         if end_location_name == burner_name:
             return pos_burner
             #return utils.get_surface_position(world, 'front_right')
@@ -162,19 +167,19 @@ def main():
             print (f"ERROR! ROBOT NOT AT START POSE!\ntool_pose_from_config={current_pose}\nstart_pose={start_pose}")
             wait_for_user()
         else:
-            print ("Navigate ok. Robot near start pose...")
+            print ("Robot near start pose. Finding end config...")
 
         end_config = utils.get_goal_config(world, get_joint_positions(world.robot, world.arm_joints), end_pose, ik_time=0.1)
 
         
         if end_config == None:
             print (f"No end config found for goal_pose={end_pose}! Trying again with larger ik time and goal radius before exiting program")
-            end_config = utils.get_goal_config(world, get_joint_positions(world.robot, world.arm_joints), end_pose, ik_time=0.1, goal_radius=0.25)
+            end_config = utils.get_goal_config(world, get_joint_positions(world.robot, world.arm_joints), end_pose, ik_time=0.1, goal_radius=0.15)
             if end_config == None:
                 print ("ERROR! No end config found! Exiting program")
                 wait_for_user()
-            wait_for_user()
-        
+
+        print("End config found. Performing RRT...")
         if pre_render:
             save = get_joint_positions(world.robot, world.arm_joints)
             print("End config found and shown.")
@@ -182,8 +187,8 @@ def main():
             wait_for_user()
             set_joint_positions(world.robot, world.arm_joints, save)
         
-        config_path = [get_joint_positions(world.robot, world.arm_joints), end_config]
-        #config_path = rrt.rrt_arm_wrapper(get_joint_positions(world.robot, world.arm_joints), end_config, world.robot, world.arm_joints)
+        #config_path = [get_joint_positions(world.robot, world.arm_joints), end_config]
+        config_path = rrt.rrt_arm_wrapper(get_joint_positions(world.robot, world.arm_joints), end_config, world.robot, world.arm_joints)
         
         if config_path == None:
             print ("ERROR! No config_path found! Exiting program")
@@ -191,8 +196,10 @@ def main():
 
         current_conf = utils.move(world, config_path, item_in_hand=item_in_hand[robot_name])
 
-    def get_surface_name(drawer_name):
-        if drawer_name == indigo_drawer_center_name:
+    def get_surface_name(surface_name):
+        if surface_name == indigo_drawer_center_name:
+            return 'indigo_drawer_top'
+        if surface_name == burner_name:
             return 'indigo_drawer_top'
 
     def close_drawer (robot_name, drawer_name):
@@ -225,13 +232,14 @@ def main():
 
     def place (robot_name, item_name, surface_name):
         pose = None
+
         if surface_name == indigo_drawer_center_name:
             drawer_link = link_from_name(KITCHEN_BODY,'indigo_drawer_top')
             pose = get_link_pose(KITCHEN_BODY, drawer_link)
         else:
-            sname = get_surface_name(surface_name)
-            my_surf = surface_from_name(sname)
-            pose = utils.get_surface_position(world, my_surf)
+            gripper_pose = planner_get_pose(surface_name)
+            pose = utils.pose_offset(gripper_pose, -GRIPPER_OFFSETS[0], -GRIPPER_OFFSETS[1], -GRIPPER_OFFSETS[2])
+                
         
         item_in_itemholder[surface_name].append(body_from_item_name(item_name))
         set_pose(item_in_hand[robot_name], pose)
@@ -282,46 +290,8 @@ def main():
     for act in plan:
         print('PERFORMING ACTION: ' + (act.name) + ' ' + ' '.join(act.parameters))
         perform_action(act.name, act.parameters)
-
-
-    #conf_handle_closed = utils.get_goal_config(world, start_config, handle_pose_closed)
-    
-    # end_conf = utils.move(world, [conf_handle_closed], None, sleep_time=0.005)
-    
-    # print("Did first move")
-    # wait_for_user()
-    # utils.open_drawer(world)
-    # print("Opened drawer")
-    # wait_for_user()
-
-
-    #utils.move(world, handle_pose_closed, item_in_hand=None, sleep_time=0.005)
-
-    # Run RRT
-
-    #########################
-    # THIS IS GOOD BELOW:
-    #########################
-    #config_path = rrt.rrt_arm_wrapper(start_config, conf_meat_can, world.robot, world.arm_joints)
-    #end_conf = utils.move(world, config_path)
-
-    # surface_name = 'indigo_drawer_top'
-    # surface = surface_from_name(surface_name)
-    # print(f"SURFACE TYPE: {type(surface)}")
-    
-
-    # # Test "in hand"
-    # item_in_hand = surface #world.body_from_name['potted_meat_can1']
-    # utils.move(world, [conf_goal], item_in_hand, sleep_time=0.005)
-
-    # # Visualise moving to goal
-    # print(f"\n\nFound goal config! = {conf_goal}")
-    # for conf in utils.interpolate_configs(start_config, conf_goal):
-    #     set_joint_positions(world.robot, ik_joints, conf)
-    #     set_pose(item_in_hand, get_link_pose(world.robot, tool_link))
-    #     time.sleep(0.005)
-    # print("At goal config")
-    # wait_for_user()
+    print('Action plan completed. Press enter to exit.')
+    wait_for_user()
 
 
 if __name__ == '__main__':

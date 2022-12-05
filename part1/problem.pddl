@@ -13,6 +13,7 @@
     (:init
         (robot-hand-empty franka)
         (robot-near franka nowhere)
+        (item-holder-closed nowhere)
         ; all item-holder-closed are false
         
         (item-in-holder sugar_box burner)
@@ -20,6 +21,7 @@
         (item-holder-full burner)
         (item-holder-full countertop)
         (item-holder-closed indigo_drawer)
+        
         (can-manipulate indigo_drawer_handle indigo_drawer)
 
     )
