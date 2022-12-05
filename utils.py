@@ -192,7 +192,7 @@ def pose_offset(pose, x, y, z):
     return ((pose[0][0]+x,pose[0][1]+y,pose[0][2]+z), pose[1])
 
 # Move the arm in the world by interpolating between end_confs
-def move(world, end_confs, item_in_hand=None, sleep_time=0.005):
+def move(world, end_confs, item_in_hand=None, item_in_holder=None, sleep_time=0.005):
     tool_link = link_from_name(world.robot, 'panda_hand')
     start_conf = get_joint_positions(world.robot, world.arm_joints)
     ik_joints = get_ik_joints(world.robot, PANDA_INFO, tool_link)
@@ -214,6 +214,14 @@ def move(world, end_confs, item_in_hand=None, sleep_time=0.005):
             if type(item_in_hand) == Surface:
                 drawer_joint = joint_from_name(world.kitchen,item_in_hand.joints[0])
                 set_joint_position(int(KITCHEN_BODY), drawer_joint, tool_pose_current[0][0] - tool_init_pose[0][0])
+
+                # Set position of item in holder
+                if not item_in_holder == None: 
+                    orig_pose = get_pose(item_in_holder)
+                    new_pose = orig_pose
+                    new_pose[0][0] = new_pose[0][0]
+
+                    #set_pose(item_in_holder, )
 
             # Set position of other object in robot hand
             elif not item_in_hand == None:

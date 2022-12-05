@@ -93,9 +93,11 @@ def main():
     countertop_name = 'countertop'
     KITCHEN_BODY = 0
     item_in_hand = dict()
+    item_in_holder = dict()
     is_open = dict()
     is_open[indigo_drawer_center_name] = False
     item_in_hand[franka_name] = None
+    item_in_holder[indigo_drawer_center_name] = None
 
     world._update_initial()
     tool_link = link_from_name(world.robot, 'panda_hand')
