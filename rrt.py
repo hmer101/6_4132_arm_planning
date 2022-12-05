@@ -4,7 +4,7 @@ from random import random
 import time
 import utils
 
-from pybullet_tools.utils import set_joint_positions, interval_generator, get_custom_limits, CIRCULAR_LIMITS, get_distance, link_from_name, get_joint_positions, single_collision, link_pairs_collision, get_all_links 
+from pybullet_tools.utils import set_joint_positions, interval_generator, get_custom_limits, CIRCULAR_LIMITS, get_distance, link_from_name, get_joint_positions, single_collision, link_pairs_collision, get_links, get_all_links 
 from src.utils import surface_from_name
 
 from pybullet_tools.ikfast.franka_panda.ik import PANDA_INFO
@@ -92,6 +92,9 @@ def detect_collision(robot_body, config):
     # Check collisions with kitchen
     if single_collision(robot_body) == True:    # Collision with any bodies in world
         collision = True
+    # elif link_pairs_collision(robot_body, get_links(robot_body), int(KITCHEN_BODY)):
+    #     collision = True
+
 
     # SELF COLLISIONS
     #elif link_pairs_collision(robot_body, get_links(robot_body), robot_body, get_links(robot_body)): #pairwise_collision(robot_body, robot_body) == True: # Collision with self
@@ -144,25 +147,36 @@ def rrt(robot_body, start, goal_sample, distance_fn, sample_fn, extend_fn, colli
         g = goal_sample
         goal_sample = lambda: g
     nodes = [TreeNode(start)]
+    nodes_goal_connection_tested = []
+
     for i in irange(max_iterations):
         if elapsed_time(start_time) >= max_time:
             break
         goal = random() < goal_probability or i == 0
 
         # Sample. Try sampling from goal randomly - return a normal sample if unable to 
-        s = goal_sample() if goal else sample_fn()
+        # s = goal_sample() if goal else sample_fn()
+        s = sample_fn()
 
         # Find closest config in tree to new sample config and extend from closest config to 
         last = argmin(lambda n: distance_fn(n.config, s), nodes)
+        
+        # If goal sampling, check the nearest point to the goal that hasn't been checked yet 
+        # (avoids an infeasible sample near the goal blocking other samples from connecting to the goal)
+        if goal:
+            s = goal_sample() 
+            last = argmin(lambda n: distance_fn(n.config, s), set(nodes)-set(nodes_goal_connection_tested))
+            nodes_goal_connection_tested.append(last)
+         
         configs = extend_fn(last.config, s)
 
         valid = True
 
-        for conf_count in range(len(configs)): #q in configs:
+        for conf_count in range(len(configs)):
             q = configs[conf_count]
 
             # Test collision at every 10th point and at end (to stop collision testing appearing as often in visualization)
-            if conf_count%10 == 0 or conf_count == len(configs)-1: #50
+            if conf_count%10 == 0 or conf_count == len(configs)-1:
                 if collision_fn(robot_body, q):
                     valid = False
                     break
