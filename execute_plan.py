@@ -5,29 +5,25 @@ import numpy as np
 import rrt
 
 import utils
-sys.path.insert(0,os.path.abspath(os.path.join(os.getcwd(), 'part1')))
-from ff_planner import FF_Planner
-from bfs_planner import BFS_Planner
 from pybullet_tools.utils import get_joint_positions, set_joint_positions
 from src.utils import translate_linearly
 __import__('padm-project-2022f')
-from pybullet_tools.utils import set_pose, Pose, get_distance, Point, Euler, multiply, stable_z_on_aabb, wait_for_user, get_random_seed, get_numpy_seed, link_from_name
-from pybullet_tools.utils import CIRCULAR_LIMITS, set_joint_positions, get_link_pose, get_joint_positions
+from pybullet_tools.utils import set_pose, Pose, get_distance, Point, Euler, multiply, stable_z_on_aabb, wait_for_user, link_from_name
+from pybullet_tools.utils import set_joint_positions, get_link_pose, get_joint_positions
 
-from pybullet_tools.ikfast.franka_panda.ik import PANDA_INFO, FRANKA_URDF
+from pybullet_tools.ikfast.franka_panda.ik import PANDA_INFO
 from pybullet_tools.ikfast.ikfast import get_ik_joints
 #from pybullet_tools.transformations import quaternion_from_euler, euler_from_quaternion
 
 from src.world import World
-from src.utils import JOINT_TEMPLATE, BLOCK_SIZES, BLOCK_COLORS, COUNTERS, \
-    ALL_JOINTS, LEFT_CAMERA, CAMERA_MATRIX, CAMERA_POSES, CAMERAS, compute_surface_aabb, \
-    BLOCK_TEMPLATE, name_from_type, GRASP_TYPES, SIDE_GRASP, \
-    STOVES, TOP_GRASP, LEFT_DOOR, translate_linearly, surface_from_name
+from src.utils import COUNTERS, compute_surface_aabb, name_from_type, translate_linearly, surface_from_name
 
 
 UNIT_POSE2D = (0., 0., 0.)
 GRIPPER_OFFSET_SPAM = (0.2, 0, 0.05)
 GRIPPER_OFFSET_SUGAR = (0.2, 0, 0.1)
+PRE_RENDER = False
+DROP_DISTANCE = 0.15
 
 def pose2d_on_surface(world, entity_name, surface_name, pose2d=UNIT_POSE2D):
     x, y, yaw = pose2d
@@ -70,14 +66,11 @@ item_in_hand[franka_name] = None
 item_in_itemholder = {indigo_drawer_center_name:[]}
 
 tool_link = link_from_name(world.robot, 'panda_hand')
-
 ik_joints = get_ik_joints(world.robot, PANDA_INFO, tool_link)
 start_pose = get_link_pose(world.robot, tool_link)
-
 handle_pose_closed = utils.get_handle_position(world, is_open=False)
-pos_indigo_drawer_center = utils.get_drawer_center_position(world)
+pos_indigo_drawer_center = utils.pose_offset(utils.get_drawer_center_position(world), 0, 0, DROP_DISTANCE)
 current_conf = get_joint_positions(world.robot, world.arm_joints)
-pre_render = False
 
 
 
@@ -108,20 +101,22 @@ def get_robot(robot_name):
     if robot_name == 'franka':
         return world.robot
 
-def planner_get_pose(end_location_name):
+def planner_get_pose(end_location_name, offset=(0,0,0)):
+    pos = None
     if end_location_name == burner_name:
-        return pos_burner
+        pos= pos_burner
     if end_location_name == indigo_drawer_handle_name:
         areuopen = is_open[indigo_drawer_center_name]
-        return utils.get_handle_position(world, areuopen)
+        pos= utils.get_handle_position(world, areuopen)
         #return get_drawer_pose(end_location_name) #TODO CHECK THIS FUNCTION
     if end_location_name == indigo_drawer_center_name:
-        return pos_indigo_drawer_center
+        pos= pos_indigo_drawer_center
     if end_location_name == countertop_name:
-        return pos_counter
+        pos= pos_counter
     if end_location_name == 'nowhere': # If the robot is nowhere of significance, just return its init config
-        return utils.tool_pose_from_config(world.robot, get_joint_positions(world.robot, world.arm_joints))
+        pos= utils.tool_pose_from_config(world.robot, get_joint_positions(world.robot, world.arm_joints))
         #return utils.get_surface_position(world, 'indigo_tmp')
+    return utils.pose_offset(pos, offset[0], offset[1], offset[2])
 
 def get_drawer_link(drawer_name):
     return link_from_name(KITCHEN_BODY,drawer_name)
@@ -132,35 +127,40 @@ def get_drawer_pose(drawer_name):
 def get_surface(surface_name):
     return surface_from_name(indigo_drawer_center_name)
 
+def get_item_offset(robot_name):
+    body = item_in_hand[robot_name]
+
+
 def navigate(robot_name, start_location, end_location):
     robot = get_robot(robot_name)
+
+
     
     end_pose = planner_get_pose(end_location)
+
     if end_pose == None:
         print(f"Error! No end_pose found for {end_location}")
         wait_for_user()
     start_pose = planner_get_pose(start_location)
     current_pose = utils.tool_pose_from_config(world.robot, get_joint_positions(world.robot, world.arm_joints))
 
-    # c_sq = 0
-    # for i in range(len(current_pose[0])):
-    #     c_sq += (current_pose[0][i] - start_pose[0][i])**2
     if get_distance(current_pose[0], start_pose[0]) >= 0.21:
         print (f"ERROR! ROBOT NOT AT START POSE!\ntool_pose_from_config={current_pose}\nstart_pose={start_pose}")
         wait_for_user()
 
     end_config = utils.get_goal_config(world, get_joint_positions(world.robot, world.arm_joints), end_pose, ik_time=0.1)
 
-    
     if end_config == None:
         print (f"No end config found for goal_pose={end_pose}! Trying again with larger ik time and goal radius before exiting program")
-        end_config = utils.get_goal_config(world, get_joint_positions(world.robot, world.arm_joints), end_pose, ik_time=0.1, goal_radius=0.15)
+        end_config = utils.get_goal_config(world, get_joint_positions(world.robot, world.arm_joints), end_pose, ik_time=0.2, goal_radius=0.15)
         if end_config == None:
             print ("ERROR! No end config found! Exiting program")
             wait_for_user()
+        else:
+            print("End config found. Performing RRT...")
 
-    print("End config found. Performing RRT...")
-    if pre_render:
+    
+    if PRE_RENDER:
         save = get_joint_positions(world.robot, world.arm_joints)
         print("End config found and shown.")
         set_joint_positions(world.robot, world.arm_joints, end_config)
@@ -193,7 +193,6 @@ def open_drawer(robot_name, drawer_name, drawer_handle_name):
     surface = get_surface('indigo_drawer_top')
     current_conf = utils.open_the_drawer(world,surface, items_on_surface=item_in_itemholder[drawer_name])
     is_open[drawer_name] = True
-    print(f"DRAWER_OPEN_CONFIG={current_conf}")
 
 def body_name_from_item_name(item_name):
     if item_name == 'spam_box':

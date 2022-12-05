@@ -19,9 +19,13 @@ from src.world import World
 from src.utils import compute_surface_aabb, open_surface_joints, surface_from_name, joint_from_name, Surface
 import rrt
 import time
-KITCHEN_BODY = 0
-D_LENGTH = 0.5
 
+KITCHEN_BODY = 0
+DRAWER_LENGTH = 0.5
+HANDLE_OFFSET = 0.2
+BASE_FINAL_OFFSET = (0.2,-0.1)
+STANDARD_GOAL_RADIUS = 0.01
+STANDARD_IK_TIME = 0.1
 
 ## HELPER FUNCTIONS
 # converted this function from a generator to returning a list
@@ -56,7 +60,7 @@ def get_drawer_center_position(world):
     xyz = []
     for i in range(3):
         xyz.append((open[0][i] + closed[0][i])/2)
-    xyz[2] += 0.2
+    
     return (xyz, open[1])
 
 # Get the position of the indigo drawer handle in the world
@@ -104,7 +108,7 @@ def get_handle_position(world, is_open):
     handle_euler = [math.pi,math.pi/2,0]
     handle_q = quaternion_from_euler(handle_euler[0], handle_euler[1], handle_euler[2]) 
     handle_pose = (list(drawer_pose[0]), handle_q) #Note not a deep copy as drawer pose thrown away
-    handle_pose[0][0] = drawer_surface.upper[0] + 0.2 # add to this value ot move 
+    handle_pose[0][0] = drawer_surface.upper[0] + HANDLE_OFFSET # add to this value ot move 
     handle_pose[0][2] = handle_pose[0][2] - 0.0 
     #if is_open:
     #    handle_pose[0][0] += D_LENGTH #((0.4287344217300415, 1.0858064889907837, -0.6024341583251953), (0.7225275039672852, 0.36401623487472534, -0.5689088106155396, -0.14761091768741608))
@@ -131,10 +135,10 @@ def get_pose_obj_goal(world, object_name):
 
     if object_name == 'potted_meat_can1':
         #gripper_orient = [0,0,0,1]
-        gripper_euler = [math.pi,math.pi/2,0]
+        gripper_euler = [-math.pi,math.pi/2,0]
         gripper_orient = quaternion_from_euler(gripper_euler[0], gripper_euler[1], gripper_euler[2]) 
     elif object_name == 'sugar_box0':
-        gripper_euler = [math.pi,math.pi/2,0]
+        gripper_euler = [-math.pi,math.pi/2,0]
         gripper_orient = quaternion_from_euler(gripper_euler[0], gripper_euler[1], gripper_euler[2]) 
     
     
@@ -143,7 +147,7 @@ def get_pose_obj_goal(world, object_name):
     return gripper_pose
 
 # Get configuration from an end gripper pose
-def get_goal_config(world, start_config, end_pose, goal_radius=0.01, pose_step_size = 0.025, visualize=False, ik_time=0.1):
+def get_goal_config(world, start_config, end_pose, goal_radius=STANDARD_GOAL_RADIUS, pose_step_size = 0.025, visualize=False, ik_time=STANDARD_IK_TIME):
     tool_link = link_from_name(world.robot, 'panda_hand')
     ik_joints = get_ik_joints(world.robot, PANDA_INFO, tool_link)
 
@@ -164,10 +168,10 @@ def close_the_drawer(world, surface, items_on_surface=[]):
     ee_start_config = get_joint_positions(world.robot, world.arm_joints)
     tool_link = link_from_name(world.robot, 'panda_hand')
     ee_start_pose = get_link_pose(world.robot, tool_link)
-    ee_end_pose = ((ee_start_pose[0][0]-D_LENGTH, ee_start_pose[0][1], ee_start_pose[0][2]),ee_start_pose[1])
+    ee_end_pose = ((ee_start_pose[0][0]-DRAWER_LENGTH, ee_start_pose[0][1], ee_start_pose[0][2]),ee_start_pose[1])
     goal_pose = ee_end_pose
     # move to the start config
-    goal_conf = get_goal_config(world, ee_start_config, goal_pose, goal_radius=0.01, ik_time=0.1)
+    goal_conf = get_goal_config(world, ee_start_config, goal_pose, goal_radius=STANDARD_GOAL_RADIUS, ik_time=STANDARD_IK_TIME)
     if goal_conf is None:
         print("ERROR! GOAL CONF NOT FOUND")
     surface_name = 'indigo_drawer_top'
@@ -182,10 +186,10 @@ def open_the_drawer(world, surface, items_on_surface=[]):
     ee_start_config = get_joint_positions(world.robot, world.arm_joints)
     tool_link = link_from_name(world.robot, 'panda_hand')
     ee_start_pose = get_link_pose(world.robot, tool_link)
-    ee_end_pose = ((ee_start_pose[0][0]+D_LENGTH, ee_start_pose[0][1], ee_start_pose[0][2]),ee_start_pose[1])
+    ee_end_pose = ((ee_start_pose[0][0]+DRAWER_LENGTH, ee_start_pose[0][1], ee_start_pose[0][2]),ee_start_pose[1])
     goal_pose = ee_end_pose
     # move to the start config
-    goal_conf = get_goal_config(world, ee_start_config, goal_pose, goal_radius=0.01, ik_time=0.1)
+    goal_conf = get_goal_config(world, ee_start_config, goal_pose, goal_radius=STANDARD_GOAL_RADIUS, ik_time=STANDARD_IK_TIME)
     surface_name = 'indigo_drawer_top'
     surface = surface_from_name(surface_name)
     item_in_hand = surface #world.body_from_name['potted_meat_can1']
@@ -225,7 +229,7 @@ def move(world, end_confs, item_in_hand=None, sleep_time=0.005, items_on_surface
 
                 delta_drawer = delta_tool
                 if (delta_tool<0):
-                    delta_drawer += D_LENGTH
+                    delta_drawer += DRAWER_LENGTH
                 set_joint_position(int(KITCHEN_BODY), drawer_joint, delta_drawer)
 
                 for body in items_on_surface:
@@ -265,10 +269,8 @@ def get_base_goal_position(world):
     # Add drawer and robot dimensions for left edge
     drawer_surface =  compute_surface_aabb(world, 'indigo_drawer_top')
     goal_position = list(drawer_pose[0]) # Note not a deep copy as drawer pose thrown away
-    #offset = [0.4, -0.2]
-    offset = [0.3, -0.1]
-    goal_position[0] = float(drawer_surface.upper[0]) + offset[0] #approximate robot width = 0.2                 
-    goal_position[1] = float(drawer_surface.lower[1]) + offset[1]
+    goal_position[0] = float(drawer_surface.upper[0]) + BASE_FINAL_OFFSET[0] #approximate robot width = 0.2                 
+    goal_position[1] = float(drawer_surface.lower[1]) + BASE_FINAL_OFFSET[1]
 
     return tuple(goal_position[0:2])
 
