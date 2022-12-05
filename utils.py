@@ -206,8 +206,10 @@ def move(world, end_confs, item_in_hand=None, sleep_time=0.005):
 
     tool_init_pose = get_link_pose(world.robot, tool_link)
     tool_pose_current = None
+
+    last_conf = start_conf
     for confs in end_confs:
-        for conf in interpolate_configs(start_conf, confs):
+        for conf in interpolate_configs(last_conf, confs):
             time.sleep(sleep_time)
 
             # Set position of robot arm
@@ -224,7 +226,9 @@ def move(world, end_confs, item_in_hand=None, sleep_time=0.005):
             elif not item_in_hand == None:
                 set_pose(item_in_hand, tool_pose_current)
 
-    return get_joint_positions(world.robot, world.arm_joints)
+        last_conf = get_joint_positions(world.robot, world.arm_joints)
+
+    return last_conf
 
 
 ## FOR BASE MOVEMENT
