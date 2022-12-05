@@ -84,6 +84,7 @@ To run the file, navigate to the `part2` directory, and run `python3 main.py`
 
 - Finding position of handle and position to move robot base to. "Hardcoded" these locations relative to drawer center.
 - Base movement is "hardcoded" rather than using RRT. This allows no collision checking when base is moved - movement function and goal position designed for the kitchen such that no collisions will occur.
+- Added "nodes checked" list when goal sampling so a closer node to the goal won't be re-checked if the path from that node to the goal is already found to have collisions
 
 
 ### Current Issues
