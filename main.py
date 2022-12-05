@@ -83,9 +83,9 @@ def main():
     obj_pos_meat = utils.get_pose_obj_goal(world, 'potted_meat_can1')
     obj_pos_sugar = utils.get_pose_obj_goal(world, 'sugar_box0')
     global pos_counter
-    pos_counter = utils.pose_offset(obj_pos_meat, 0.2, 0.0, 0.1)
+    pos_counter = utils.pose_offset(obj_pos_meat, 0.2, 0.0, 0.05)
     global pos_burner
-    pos_burner = utils.pose_offset(obj_pos_sugar, 0.2, 0.0, 0.1)
+    pos_burner = utils.pose_offset(obj_pos_sugar, 0.2, 0.0, 0.05)
     franka_name = 'franka'
     indigo_drawer_handle_name = 'indigo_drawer_handle'
     indigo_drawer_center_name = 'indigo_drawer'
@@ -96,6 +96,7 @@ def main():
     is_open = dict()
     is_open[indigo_drawer_center_name] = False
     item_in_hand[franka_name] = None
+    item_in_itemholder = {indigo_drawer_center_name:[]}
 
     world._update_initial()
     tool_link = link_from_name(world.robot, 'panda_hand')
@@ -151,7 +152,6 @@ def main():
             wait_for_user()
         start_pose = planner_get_pose(start_location)
         
-        # TODO Check that the start_pose and current robot pose are close
         current_pose = utils.tool_pose_from_config(world.robot, get_joint_positions(world.robot, world.arm_joints))
 
         
@@ -168,11 +168,12 @@ def main():
 
         
         if end_config == None:
-            print (f"No end config found for goal_pose={end_pose}! Trying again with larger ik time before exiting program")
-            end_config = utils.get_goal_config(world, get_joint_positions(world.robot, world.arm_joints), end_pose, ik_time=0.5)
+            print (f"No end config found for goal_pose={end_pose}! Trying again with larger ik time and goal radius before exiting program")
+            end_config = utils.get_goal_config(world, get_joint_positions(world.robot, world.arm_joints), end_pose, ik_time=0.1, goal_radius=0.25)
             if end_config == None:
                 print ("ERROR! No end config found! Exiting program")
                 wait_for_user()
+            wait_for_user()
         
         if pre_render:
             save = get_joint_positions(world.robot, world.arm_joints)
@@ -181,8 +182,9 @@ def main():
             wait_for_user()
             set_joint_positions(world.robot, world.arm_joints, save)
         
+        config_path = [get_joint_positions(world.robot, world.arm_joints), end_config]
+        #config_path = rrt.rrt_arm_wrapper(get_joint_positions(world.robot, world.arm_joints), end_config, world.robot, world.arm_joints)
         
-        config_path = rrt.rrt_arm_wrapper(get_joint_positions(world.robot, world.arm_joints), end_config, world.robot, world.arm_joints)
         if config_path == None:
             print ("ERROR! No config_path found! Exiting program")
             wait_for_user()
@@ -196,13 +198,13 @@ def main():
     def close_drawer (robot_name, drawer_name):
         #robot = get_robot(robot_name)
         surface = get_surface('indigo_drawer_top')
-        current_conf = utils.close_the_drawer(world, surface)
+        current_conf = utils.close_the_drawer(world, surface, items_on_surface=item_in_itemholder[drawer_name])
         is_open[drawer_name] = False
     def open_drawer(robot_name, drawer_name, drawer_handle_name):
         #robot = get_robot(robot_name)
         #sname = get_surface_name(drawer_name)
         surface = get_surface('indigo_drawer_top')
-        current_conf = utils.open_the_drawer(world,surface)
+        current_conf = utils.open_the_drawer(world,surface, items_on_surface=item_in_itemholder[drawer_name])
         is_open[drawer_name] = True
         print(f"DRAWER_OPEN_CONFIG={current_conf}")
 
@@ -215,9 +217,10 @@ def main():
     def body_from_item_name(item_name):
         return world.body_from_name[body_name_from_item_name(item_name)]
 
-    def pick_up (robot_name, item_name):
+    def pick_up (robot_name, item_name, item_holder_name):
         body = body_from_item_name(item_name)
         item_in_hand[robot_name] = body
+        item_in_itemholder[item_holder_name] = []
 
 
     def place (robot_name, item_name, surface_name):
@@ -230,7 +233,7 @@ def main():
             my_surf = surface_from_name(sname)
             pose = utils.get_surface_position(world, my_surf)
         
-
+        item_in_itemholder[surface_name].append(body_from_item_name(item_name))
         set_pose(item_in_hand[robot_name], pose)
         #body_name = body_name_from_item_name(item_name)
         #their_surface_name = convert_surface_name(surface_name)
@@ -251,7 +254,7 @@ def main():
         if a == 'navigate':
             navigate(params[0],params[1],params[2])
         if a == 'pick-up':
-            pick_up(params[0],params[1])
+            pick_up(params[0],params[1],params[2])
         if a == 'place':
             place(params[0],params[1],params[2])
         if a == 'close-drawer':
