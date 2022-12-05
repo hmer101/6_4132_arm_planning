@@ -220,7 +220,10 @@ def move(world, end_confs, item_in_hand=None, sleep_time=0.005):
 
             if type(item_in_hand) == Surface:
                 drawer_joint = joint_from_name(world.kitchen,item_in_hand.joints[0])
-                set_joint_position(int(KITCHEN_BODY), drawer_joint, tool_pose_current[0][0] - tool_init_pose[0][0])
+                delta = tool_pose_current[0][0] - tool_init_pose[0][0]
+                if (delta<0):
+                    delta += D_LENGTH
+                set_joint_position(int(KITCHEN_BODY), drawer_joint, delta)
 
             # Set position of other object in robot hand
             elif not item_in_hand == None:
