@@ -175,7 +175,6 @@ def close_the_drawer(world, surface, items_on_surface=[]):
     item_in_hand = surface #world.body_from_name['potted_meat_can1']
     end_conf = move(world, [goal_conf], item_in_hand, sleep_time=0.005,items_on_surface=items_on_surface)
     item_in_hand = None
-    print(f"CLOSE_THE_DRAWER\nstart={ee_start_pose}\nend={ee_end_pose}")
     return end_conf
 
 # Open the drawer
@@ -187,13 +186,11 @@ def open_the_drawer(world, surface, items_on_surface=[]):
     goal_pose = ee_end_pose
     # move to the start config
     goal_conf = get_goal_config(world, ee_start_config, goal_pose, goal_radius=0.01, ik_time=0.1)
-    print(f'ee_start_config={ee_start_config}, goal_conf={goal_conf}, goal_pose={goal_pose}, ')
     surface_name = 'indigo_drawer_top'
     surface = surface_from_name(surface_name)
     item_in_hand = surface #world.body_from_name['potted_meat_can1']
     end_conf = move(world, [goal_conf], item_in_hand, sleep_time=0.005, items_on_surface=items_on_surface)
 
-    print(f"OPEN_THE_DRAWER\nstart={ee_start_pose}\nend={ee_end_pose}")
     item_in_hand = None
     return end_conf
 
@@ -237,11 +234,11 @@ def move(world, end_confs, item_in_hand=None, sleep_time=0.005, items_on_surface
                     pose_new = pose_offset(pose, delta_item, 0, 0)
                     set_pose(body, pose_new)
 
-                # Set position of item in holder
-                if not item_in_holder == None: 
-                    orig_pose = get_pose(item_in_holder)
-                    new_pose = orig_pose
-                    new_pose[0][0] = new_pose[0][0]
+                # # Set position of item in holder
+                # if not item_in_holder == None: 
+                #     orig_pose = get_pose(item_in_holder)
+                #     new_pose = orig_pose
+                #     new_pose[0][0] = new_pose[0][0]
 
                     #set_pose(item_in_holder, )
 
