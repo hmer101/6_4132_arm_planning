@@ -237,6 +237,14 @@ def move(world, end_confs, item_in_hand=None, sleep_time=0.005, items_on_surface
                     pose_new = pose_offset(pose, delta_item, 0, 0)
                     set_pose(body, pose_new)
 
+                # Set position of item in holder
+                if not item_in_holder == None: 
+                    orig_pose = get_pose(item_in_holder)
+                    new_pose = orig_pose
+                    new_pose[0][0] = new_pose[0][0]
+
+                    #set_pose(item_in_holder, )
+
             # Set position of other object in robot hand
             elif not item_in_hand == None:
                 

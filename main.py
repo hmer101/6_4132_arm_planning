@@ -95,6 +95,7 @@ def main():
     countertop_name = 'countertop'
     KITCHEN_BODY = 0
     item_in_hand = dict()
+    item_in_holder = dict()
     is_open = dict()
     is_open[indigo_drawer_center_name] = False
     item_in_hand[franka_name] = None
