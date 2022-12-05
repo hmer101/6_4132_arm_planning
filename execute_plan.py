@@ -18,7 +18,7 @@ from src.utils import COUNTERS, compute_surface_aabb, name_from_type, translate_
 
 UNIT_POSE2D = (0., 0., 0.)
 GRIPPER_OFFSET_SPAM = (0.2, 0, 0.05)
-GRIPPER_OFFSET_SUGAR = (0.2, 0, 0.1)
+GRIPPER_OFFSET_SUGAR = (0.22, 0, 0.22)
 PRE_RENDER = False
 DROP_DISTANCE = 0.15
 
@@ -145,16 +145,18 @@ def navigate(robot_name, start_location, end_location):
         print (f"ERROR! ROBOT NOT AT START POSE!\ntool_pose_from_config={current_pose}\nstart_pose={start_pose}")
         wait_for_user()
 
-    end_config = utils.get_goal_config(world, get_joint_positions(world.robot, world.arm_joints), end_pose, ik_time=0.1)
+    end_config = utils.get_goal_config(world, get_joint_positions(world.robot, world.arm_joints), end_pose)
 
     if end_config == None:
-        print (f"No end config found for goal_pose={end_pose}! Trying again with larger ik time and goal radius before exiting program")
-        end_config = utils.get_goal_config(world, get_joint_positions(world.robot, world.arm_joints), end_pose, ik_time=0.2, goal_radius=0.15)
+        print (f"No end config found for goal pose. Trying again with larger ik time...")
+        end_config = utils.get_goal_config(world, get_joint_positions(world.robot, world.arm_joints), end_pose, ik_time=0.2)
+        print(f"End pose = {utils.tool_pose_from_config(world.robot, end_config)}\nDesired={end_pose}")
         if end_config == None:
             print ("ERROR! No end config found! Exiting program")
             wait_for_user()
         else:
             print("End config found. Performing RRT...")
+            wait_for_user()
 
     
     if PRE_RENDER:
@@ -214,7 +216,7 @@ def place (robot_name, item_name, surface_name):
         pose = get_link_pose(KITCHEN_BODY, drawer_link)
     else:
         gripper_pose = planner_get_pose(surface_name)
-        pose = utils.pose_offset(gripper_pose, -GRIPPER_OFFSET_SPAM[0], -GRIPPER_OFFSET_SPAM[1], -GRIPPER_OFFSET_SPAM[2])
+        pose = utils.pose_offset(gripper_pose, GRIPPER_OFFSET_SPAM[0], GRIPPER_OFFSET_SPAM[1], GRIPPER_OFFSET_SPAM[2])
             
     
     item_in_itemholder[surface_name].append(body_from_item_name(item_name))
