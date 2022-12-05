@@ -134,7 +134,9 @@ def get_pose_obj_goal(world, object_name):
         gripper_euler = [math.pi,math.pi/2,0]
         gripper_orient = quaternion_from_euler(gripper_euler[0], gripper_euler[1], gripper_euler[2]) 
     elif object_name == 'sugar_box0':
-        gripper_orient = [0,0,1,0]
+        gripper_euler = [math.pi,math.pi/2,0]
+        gripper_orient = quaternion_from_euler(gripper_euler[0], gripper_euler[1], gripper_euler[2]) 
+    
     
     gripper_pose = pose_change_orient(body_pose, gripper_orient)
 
@@ -158,7 +160,7 @@ def get_goal_config(world, start_config, end_pose, goal_radius=0.01, pose_step_s
     print("ERROR! NO GOAL CONFIG FOUND!!!")
     return None
 
-def close_the_drawer(world, surface):
+def close_the_drawer(world, surface, items_on_surface=[]):
     ee_start_config = get_joint_positions(world.robot, world.arm_joints)
     tool_link = link_from_name(world.robot, 'panda_hand')
     ee_start_pose = get_link_pose(world.robot, tool_link)
@@ -171,13 +173,13 @@ def close_the_drawer(world, surface):
     surface_name = 'indigo_drawer_top'
     surface = surface_from_name(surface_name)
     item_in_hand = surface #world.body_from_name['potted_meat_can1']
-    end_conf = move(world, [goal_conf], item_in_hand, sleep_time=0.005)
+    end_conf = move(world, [goal_conf], item_in_hand, sleep_time=0.005,items_on_surface=items_on_surface)
     item_in_hand = None
     print(f"CLOSE_THE_DRAWER\nstart={ee_start_pose}\nend={ee_end_pose}")
     return end_conf
 
 # Open the drawer
-def open_the_drawer(world, surface):
+def open_the_drawer(world, surface, items_on_surface=[]):
     ee_start_config = get_joint_positions(world.robot, world.arm_joints)
     tool_link = link_from_name(world.robot, 'panda_hand')
     ee_start_pose = get_link_pose(world.robot, tool_link)
@@ -189,7 +191,7 @@ def open_the_drawer(world, surface):
     surface_name = 'indigo_drawer_top'
     surface = surface_from_name(surface_name)
     item_in_hand = surface #world.body_from_name['potted_meat_can1']
-    end_conf = move(world, [goal_conf], item_in_hand, sleep_time=0.005)
+    end_conf = move(world, [goal_conf], item_in_hand, sleep_time=0.005, items_on_surface=items_on_surface)
 
     print(f"OPEN_THE_DRAWER\nstart={ee_start_pose}\nend={ee_end_pose}")
     item_in_hand = None
@@ -199,13 +201,14 @@ def pose_offset(pose, x, y, z):
     return ((pose[0][0]+x,pose[0][1]+y,pose[0][2]+z), pose[1])
 
 # Move the arm in the world by interpolating between end_confs
-def move(world, end_confs, item_in_hand=None, item_in_holder=None, sleep_time=0.005):
+def move(world, end_confs, item_in_hand=None, sleep_time=0.005, items_on_surface=[]):
     tool_link = link_from_name(world.robot, 'panda_hand')
     start_conf = get_joint_positions(world.robot, world.arm_joints)
     ik_joints = get_ik_joints(world.robot, PANDA_INFO, tool_link)
 
     tool_init_pose = get_link_pose(world.robot, tool_link)
     tool_pose_current = None
+    tool_pose_prev = get_link_pose(world.robot, tool_link)
 
     last_conf = start_conf
     for confs in end_confs:
@@ -220,10 +223,19 @@ def move(world, end_confs, item_in_hand=None, item_in_holder=None, sleep_time=0.
 
             if type(item_in_hand) == Surface:
                 drawer_joint = joint_from_name(world.kitchen,item_in_hand.joints[0])
-                delta = tool_pose_current[0][0] - tool_init_pose[0][0]
-                if (delta<0):
-                    delta += D_LENGTH
-                set_joint_position(int(KITCHEN_BODY), drawer_joint, delta)
+                delta_tool = tool_pose_current[0][0] - tool_init_pose[0][0]
+                delta_item = tool_pose_current[0][0] - tool_pose_prev[0][0]
+
+                delta_drawer = delta_tool
+                if (delta_tool<0):
+                    delta_drawer += D_LENGTH
+                set_joint_position(int(KITCHEN_BODY), drawer_joint, delta_drawer)
+
+                for body in items_on_surface:
+                    thisbody = body
+                    pose = get_pose(body)
+                    pose_new = pose_offset(pose, delta_item, 0, 0)
+                    set_pose(body, pose_new)
 
                 # Set position of item in holder
                 if not item_in_holder == None: 
@@ -235,7 +247,9 @@ def move(world, end_confs, item_in_hand=None, item_in_holder=None, sleep_time=0.
 
             # Set position of other object in robot hand
             elif not item_in_hand == None:
+                
                 set_pose(item_in_hand, tool_pose_current)
+            tool_pose_prev = tool_pose_current
 
         last_conf = get_joint_positions(world.robot, world.arm_joints)
 
