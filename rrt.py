@@ -165,8 +165,12 @@ def rrt(robot_body, start, goal_sample, distance_fn, sample_fn, extend_fn, colli
         # (avoids an infeasible sample near the goal blocking other samples from connecting to the goal)
         if goal:
             s = goal_sample() 
-            last = argmin(lambda n: distance_fn(n.config, s), set(nodes)-set(nodes_goal_connection_tested))
-            nodes_goal_connection_tested.append(last)
+            untested_nodes = set(nodes)-set(nodes_goal_connection_tested)
+
+            # Only test an untested node if untested ones are available
+            if len(untested_nodes) != 0:
+                last = argmin(lambda n: distance_fn(n.config, s), untested_nodes)
+                nodes_goal_connection_tested.append(last)
          
         configs = extend_fn(last.config, s)
 
@@ -190,8 +194,15 @@ def rrt(robot_body, start, goal_sample, distance_fn, sample_fn, extend_fn, colli
                 return last.retrace()
         
         # Add the node to the tree if the path to it doesn't cause a collision, but also doesn't pass through the goal
-        if valid:
+        if valid: 
+            # tool_link = link_from_name(robot_body, 'panda_hand')
+            # ik_joints = get_ik_joints(robot_body, PANDA_INFO, tool_link)
+            # conf_orig = get_joint_positions(robot_body, ik_joints)
+            # set_joint_positions(robot_body, ik_joints, last.config)
+
             last = TreeNode(configs[len(configs)-1], parent=last)
             nodes.append(last)
+            #set_joint_positions(robot_body, ik_joints, conf_orig)
+
 
     return None

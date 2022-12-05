@@ -91,7 +91,7 @@ To run the file, navigate to the `part2` directory, and run `python3 main.py`
 - FF doesn't order by helpful actions (implemented but not used)
 
 - Collision checker visualizes when collision checking and so makes the simulation look spazzy
-
+- RRT not RRT* so weird-looking motions
 
 TODO part 2:
 - Get countertop goal pose
