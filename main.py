@@ -228,8 +228,6 @@ def main():
             pose = utils.get_surface_position(world, my_surf)
         
 
-
-
         set_pose(item_in_hand[robot_name], pose)
         #body_name = body_name_from_item_name(item_name)
         #their_surface_name = convert_surface_name(surface_name)
@@ -276,7 +274,6 @@ def main():
     else:
         print('No plan was found')
         exit(1)
-
 
 
     print('EXECUTING PLAN:')

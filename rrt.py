@@ -128,7 +128,7 @@ def rrt_arm_wrapper(start_config, end_config, robot_body, arm_joints):
 # Performs RRT from start to a goal pos
 # Note that this returns the configuration sequence to traverse from the start to the goal but does not visualize this 
 def rrt(robot_body, start, goal_sample, distance_fn, sample_fn, extend_fn, collision_fn, goal_test=lambda q: False,
-        goal_probability=.5, max_iterations=9*10**9, max_time=float('inf')):
+        goal_probability=.2, max_iterations=9*10**9, max_time=float('inf')):
     """
     :param start: Start configuration - conf
     :param distance_fn: Distance function - distance_fn(q1, q2)->float
