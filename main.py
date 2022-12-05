@@ -195,13 +195,16 @@ def main():
         if drawer_name == indigo_drawer_center_name:
             return 'indigo_drawer_top'
 
+    def close_drawer (robot_name, drawer_name):
+        #robot = get_robot(robot_name)
+        surface = get_surface('indigo_drawer_top')
+        current_conf = utils.close_the_drawer(world, surface)
+        is_open[drawer_name] = False
     def open_drawer(robot_name, drawer_name, drawer_handle_name):
-        robot = get_robot(robot_name)
+        #robot = get_robot(robot_name)
         #sname = get_surface_name(drawer_name)
         surface = get_surface('indigo_drawer_top')
-
         current_conf = utils.open_the_drawer(world,surface)
-        
         is_open[drawer_name] = True
         print(f"DRAWER_OPEN_CONFIG={current_conf}")
 
@@ -240,12 +243,8 @@ def main():
         if surface_name == indigo_drawer_center_name:
             return 'indigo_drawer_bottom'
 
-    # TODO
-    def close_drawer (robot_name, drawer_name):
-        robot = get_robot(robot_name)
-        surface = get_surface(drawer_name)
-        #utils.close_the_drawer(world, surface)
-        is_open[drawer_name] = False
+
+
 
     def perform_action (name, params):
         a = name
@@ -257,7 +256,7 @@ def main():
             pick_up(params[0],params[1])
         if a == 'place':
             place(params[0],params[1],params[2])
-        if a == 'close_drawer':
+        if a == 'close-drawer':
             close_drawer(params[0],params[1])
 
     # wait_for_user()

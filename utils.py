@@ -158,33 +158,40 @@ def get_goal_config(world, start_config, end_pose, goal_radius=0.01, pose_step_s
     print("ERROR! NO GOAL CONFIG FOUND!!!")
     return None
 
+def close_the_drawer(world, surface):
+    ee_start_config = get_joint_positions(world.robot, world.arm_joints)
+    tool_link = link_from_name(world.robot, 'panda_hand')
+    ee_start_pose = get_link_pose(world.robot, tool_link)
+    ee_end_pose = ((ee_start_pose[0][0]-D_LENGTH, ee_start_pose[0][1], ee_start_pose[0][2]),ee_start_pose[1])
+    goal_pose = ee_end_pose
+    # move to the start config
+    goal_conf = get_goal_config(world, ee_start_config, goal_pose, goal_radius=0.01, ik_time=0.1)
+    if goal_conf is None:
+        print("ERROR! GOAL CONF NOT FOUND")
+    surface_name = 'indigo_drawer_top'
+    surface = surface_from_name(surface_name)
+    item_in_hand = surface #world.body_from_name['potted_meat_can1']
+    end_conf = move(world, [goal_conf], item_in_hand, sleep_time=0.005)
+    item_in_hand = None
+    print(f"CLOSE_THE_DRAWER\nstart={ee_start_pose}\nend={ee_end_pose}")
+    return end_conf
 
 # Open the drawer
 def open_the_drawer(world, surface):
-    
-    # TODO Check that it is at the start pose before moving
-    handle_pose_closed = get_handle_position(world, is_open=False)
-
     ee_start_config = get_joint_positions(world.robot, world.arm_joints)
-
-
-    
     tool_link = link_from_name(world.robot, 'panda_hand')
     ee_start_pose = get_link_pose(world.robot, tool_link)
-
     ee_end_pose = ((ee_start_pose[0][0]+D_LENGTH, ee_start_pose[0][1], ee_start_pose[0][2]),ee_start_pose[1])
-    goal_pose = ee_end_pose#get_handle_position(world, is_open=True)
-    print(f"DRAWER_OPEN_POSE={goal_pose}")
+    goal_pose = ee_end_pose
     # move to the start config
-    
     goal_conf = get_goal_config(world, ee_start_config, goal_pose, goal_radius=0.01, ik_time=0.1)
-
+    print(f'ee_start_config={ee_start_config}, goal_conf={goal_conf}, goal_pose={goal_pose}, ')
     surface_name = 'indigo_drawer_top'
     surface = surface_from_name(surface_name)
-    
     item_in_hand = surface #world.body_from_name['potted_meat_can1']
     end_conf = move(world, [goal_conf], item_in_hand, sleep_time=0.005)
 
+    print(f"OPEN_THE_DRAWER\nstart={ee_start_pose}\nend={ee_end_pose}")
     item_in_hand = None
     return end_conf
 
@@ -213,7 +220,10 @@ def move(world, end_confs, item_in_hand=None, item_in_holder=None, sleep_time=0.
 
             if type(item_in_hand) == Surface:
                 drawer_joint = joint_from_name(world.kitchen,item_in_hand.joints[0])
-                set_joint_position(int(KITCHEN_BODY), drawer_joint, tool_pose_current[0][0] - tool_init_pose[0][0])
+                delta = tool_pose_current[0][0] - tool_init_pose[0][0]
+                if (delta<0):
+                    delta += D_LENGTH
+                set_joint_position(int(KITCHEN_BODY), drawer_joint, delta)
 
                 # Set position of item in holder
                 if not item_in_holder == None: 
