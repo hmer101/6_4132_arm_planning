@@ -22,10 +22,11 @@ import time
 
 KITCHEN_BODY = 0
 DRAWER_LENGTH = 0.5
-HANDLE_OFFSET = 0.2
+HANDLE_OFFSET = 0.18
 BASE_FINAL_OFFSET = (0.2,-0.1)
 STANDARD_GOAL_RADIUS = 0.01
 STANDARD_IK_TIME = 0.1
+END_EULER = [-math.pi,math.pi/2,0]
 
 ## HELPER FUNCTIONS
 # converted this function from a generator to returning a list
@@ -135,10 +136,10 @@ def get_pose_obj_goal(world, object_name):
 
     if object_name == 'potted_meat_can1':
         #gripper_orient = [0,0,0,1]
-        gripper_euler = [-math.pi,math.pi/2,0]
+        gripper_euler = END_EULER
         gripper_orient = quaternion_from_euler(gripper_euler[0], gripper_euler[1], gripper_euler[2]) 
     elif object_name == 'sugar_box0':
-        gripper_euler = [-math.pi,math.pi/2,0]
+        gripper_euler = END_EULER 
         gripper_orient = quaternion_from_euler(gripper_euler[0], gripper_euler[1], gripper_euler[2]) 
     
     
@@ -161,7 +162,6 @@ def get_goal_config(world, start_config, end_pose, goal_radius=STANDARD_GOAL_RAD
                 return conf
             if visualize:
                 set_joint_positions(world.robot, ik_joints, conf)
-    print("ERROR! NO GOAL CONFIG FOUND!!!")
     return None
 
 def close_the_drawer(world, surface, items_on_surface=[]):
@@ -172,8 +172,6 @@ def close_the_drawer(world, surface, items_on_surface=[]):
     goal_pose = ee_end_pose
     # move to the start config
     goal_conf = get_goal_config(world, ee_start_config, goal_pose, goal_radius=STANDARD_GOAL_RADIUS, ik_time=STANDARD_IK_TIME)
-    if goal_conf is None:
-        print("ERROR! GOAL CONF NOT FOUND")
     surface_name = 'indigo_drawer_top'
     surface = surface_from_name(surface_name)
     item_in_hand = surface #world.body_from_name['potted_meat_can1']

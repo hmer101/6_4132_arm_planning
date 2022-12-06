@@ -14,11 +14,12 @@ from pybullet_tools.ikfast.ikfast import get_ik_joints
 
 from src.world import World
 from src.utils import COUNTERS, compute_surface_aabb, name_from_type, translate_linearly, surface_from_name
-
+import math
 
 UNIT_POSE2D = (0., 0., 0.)
-GRIPPER_OFFSET_SPAM = (0.2, 0, 0.05)
-GRIPPER_OFFSET_SUGAR = (0.22, 0, 0.22)
+GRIPPER_OFFSET_SPAM = (0.1, 0, 0.1)
+GRIPPER_OFFSET_SUGAR = (0.15, 0.0, 0.15)
+MAX_GOAL_RADIUS = 0.075
 PRE_RENDER = False
 DROP_DISTANCE = 0.15
 
@@ -148,15 +149,11 @@ def navigate(robot_name, start_location, end_location):
     end_config = utils.get_goal_config(world, get_joint_positions(world.robot, world.arm_joints), end_pose)
 
     if end_config == None:
-        print (f"No end config found for goal pose. Trying again with larger ik time...")
-        end_config = utils.get_goal_config(world, get_joint_positions(world.robot, world.arm_joints), end_pose, ik_time=0.2)
-        print(f"End pose = {utils.tool_pose_from_config(world.robot, end_config)}\nDesired={end_pose}")
-        if end_config == None:
-            print ("ERROR! No end config found! Exiting program")
-            wait_for_user()
-        else:
-            print("End config found. Performing RRT...")
-            wait_for_user()
+        radius = 0.01
+        while end_config == None and radius < MAX_GOAL_RADIUS:
+            radius += 0.075/2-.01
+            #print (f"No end config found for goal pose. Trying again with larger ik time...")
+            end_config = utils.get_goal_config(world, get_joint_positions(world.robot, world.arm_joints), end_pose, goal_radius=radius)
 
     
     if PRE_RENDER:
@@ -216,7 +213,7 @@ def place (robot_name, item_name, surface_name):
         pose = get_link_pose(KITCHEN_BODY, drawer_link)
     else:
         gripper_pose = planner_get_pose(surface_name)
-        pose = utils.pose_offset(gripper_pose, GRIPPER_OFFSET_SPAM[0], GRIPPER_OFFSET_SPAM[1], GRIPPER_OFFSET_SPAM[2])
+        pose = utils.pose_offset(gripper_pose, -GRIPPER_OFFSET_SPAM[0], -GRIPPER_OFFSET_SPAM[1], -GRIPPER_OFFSET_SPAM[2])
             
     
     item_in_itemholder[surface_name].append(body_from_item_name(item_name))

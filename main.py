@@ -8,7 +8,6 @@ from pathlib import Path
 
 sys.path.insert(0,os.path.abspath(os.path.join(os.getcwd(), 'part1')))
 from ff_planner import FF_Planner
-from bfs_planner import BFS_Planner
 
 from pybullet_tools.utils import  wait_for_user, set_random_seed, set_numpy_seed, get_random_seed, get_numpy_seed
 
@@ -27,7 +26,17 @@ def main():
     #bfs_planner = BFS_Planner(frozenset(ff_planner.s_0), ff_planner.s_goal_pos, ff_planner.s_goal_neg, ff_planner.actions)
     plan = ff_planner.solve()
 
-    
+
+
+    # exec.navigate('franka', 'nowhere', 'burner')
+
+    # wait_for_user()
+    # exit(0)
+           
+
+
+
+
     if type(plan) is list:
         print("\nPlan found:")
         for act in plan:
@@ -35,10 +44,10 @@ def main():
     else:
         print('No plan was found')
         exit(1)
-    act = plan[len(plan)-4]
-    exec.perform_action(act.name, act.parameters)
-    wait_for_user()
-    exit(0)
+    # act = plan[2]
+    # exec.perform_action(act.name, act.parameters)
+    # wait_for_user()
+    # exit(0)
 
     print('\nEXECUTING PLAN:')
     for act in plan:
