@@ -152,7 +152,6 @@ def navigate(robot_name, start_location, end_location):
         radius = 0.01
         while end_config == None and radius < MAX_GOAL_RADIUS:
             radius += 0.075/2-.01
-            #print (f"No end config found for goal pose. Trying again with larger ik time...")
             end_config = utils.get_goal_config(world, get_joint_positions(world.robot, world.arm_joints), end_pose, goal_radius=radius)
 
     

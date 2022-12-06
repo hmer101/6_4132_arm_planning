@@ -23,19 +23,7 @@ def main():
     domain = os.path.join(dirname,'domain.pddl') #dinner blocksworld.pddl domain.pddl
     problem = os.path.join(dirname,'problem.pddl') #pb1_dinner pb4_blocksworld.pddl problem.pddl
     ff_planner = FF_Planner(domain, problem)
-    #bfs_planner = BFS_Planner(frozenset(ff_planner.s_0), ff_planner.s_goal_pos, ff_planner.s_goal_neg, ff_planner.actions)
     plan = ff_planner.solve()
-
-
-
-    # exec.navigate('franka', 'nowhere', 'burner')
-
-    # wait_for_user()
-    # exit(0)
-           
-
-
-
 
     if type(plan) is list:
         print("\nPlan found:")
@@ -44,10 +32,6 @@ def main():
     else:
         print('No plan was found')
         exit(1)
-    # act = plan[2]
-    # exec.perform_action(act.name, act.parameters)
-    # wait_for_user()
-    # exit(0)
 
     print('\nEXECUTING PLAN:')
     for act in plan:
