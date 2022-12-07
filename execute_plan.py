@@ -16,6 +16,9 @@ from src.world import World
 from src.utils import COUNTERS, compute_surface_aabb, name_from_type, translate_linearly, surface_from_name
 import math
 
+from part3_traj_opt_kevin import Trajectory
+
+
 UNIT_POSE2D = (0., 0., 0.)
 GRIPPER_OFFSET_SPAM = (0.1, 0, 0.1)
 GRIPPER_OFFSET_SUGAR = (0.15, 0.0, 0.15)
@@ -132,8 +135,6 @@ def get_item_offset(robot_name):
 
 def navigate(robot_name, start_location, end_location):
     robot = get_robot(robot_name)
-
-
     
     end_pose = planner_get_pose(end_location)
 
@@ -154,7 +155,6 @@ def navigate(robot_name, start_location, end_location):
         while end_config == None and radius < MAX_GOAL_RADIUS:
             radius += 0.075/2-.01
             end_config = utils.get_goal_config(world, get_joint_positions(world.robot, world.arm_joints), end_pose, goal_radius=radius)
-
     
     if PRE_RENDER:
         save = get_joint_positions(world.robot, world.arm_joints)
@@ -163,12 +163,23 @@ def navigate(robot_name, start_location, end_location):
         wait_for_user()
         set_joint_positions(world.robot, world.arm_joints, save)
     
+    
+    
+
     #config_path = [get_joint_positions(world.robot, world.arm_joints), end_config]
     config_path = rrt.rrt_arm_wrapper(get_joint_positions(world.robot, world.arm_joints), end_config, world.robot, world.arm_joints)
     
     if config_path == None:
         print ("ERROR! No config_path found! Exiting program")
         wait_for_user()
+
+
+    if end_location == indigo_drawer_handle_name and start_location == 'nowhere':
+        steps = 10
+        opt = Trajectory(world, steps, config_path[0], config_path[-1])
+        init_config_path = opt.discretize(config_path)
+        path = opt.optimize(init_config_path)
+        config_path = [path]
 
     current_conf = utils.move(world, config_path, item_in_hand=item_in_hand[robot_name])
 

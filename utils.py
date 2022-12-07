@@ -10,7 +10,7 @@ sys.path.extend('pybullet')
 import gitmodules
 __import__('padm-project-2022f') 
 
-from pybullet_tools.utils import  link_from_name, multiply, Pose, Point, interpolate_poses, set_joint_positions, set_joint_position
+from pybullet_tools.utils import  get_joints, link_from_name, multiply, Pose, Point, interpolate_poses, set_joint_positions, set_joint_position
 from pybullet_tools.utils import get_link_pose, get_joint_position, get_joint_positions, get_distance, get_angle, clone_body, get_body_info, get_pose, set_pose
 from pybullet_tools.ikfast.franka_panda.ik import PANDA_INFO, FRANKA_URDF
 from pybullet_tools.ikfast.ikfast import get_ik_joints, closest_inverse_kinematics
@@ -30,8 +30,9 @@ END_EULER = [-math.pi,math.pi/2,0]
 
 ## HELPER FUNCTIONS
 # converted this function from a generator to returning a list
-def interpolate_configs(start_config, end_config, config_step_size=0.01):
-    num_steps = int(math.ceil(get_distance(start_config, end_config)/config_step_size))
+def interpolate_configs(start_config, end_config, config_step_size=0.01, num_steps=None):
+    if num_steps is None:
+        num_steps = int(math.ceil(get_distance(start_config, end_config)/config_step_size))
     configs = [ (1-(float(i)/num_steps))*np.array(start_config) + (float(i)/num_steps)*np.array(end_config) for i in range(num_steps) ]
     return configs
 
@@ -52,6 +53,26 @@ def tool_pose_from_config(robot_body, config):
     set_joint_positions(robot_body, ik_joints,conf_orig)
 
     return tool_pose
+
+def all_poses_from_config(robot_body, config):
+
+    #links = get_joints(robot_body)
+    tool_link = link_from_name(robot_body, 'panda_hand')
+    arm_links = get_ik_joints(robot_body, PANDA_INFO, tool_link)
+
+    # Get original configuration to allow resetting
+    conf_orig = get_joint_positions(robot_body, arm_links)
+
+    # Set joint to new position and get tool pose
+    set_joint_positions(robot_body, arm_links, config)
+    
+    poses = [get_link_pose(robot_body, link) for link in arm_links]
+
+    # Reset to original config
+    set_joint_positions(robot_body, arm_links,conf_orig)
+
+    return poses
+
 
 
 ## FOR FINDING RRT GOAL POSES
