@@ -54,6 +54,8 @@ def main():
     # Solve 
     result = Solve(prog)
 
+    return result
+
     # print out the result.
     print("Success? ", result.is_success())
     # Print the solution to the decision variables.

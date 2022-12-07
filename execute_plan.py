@@ -16,7 +16,7 @@ from src.world import World
 from src.utils import COUNTERS, compute_surface_aabb, name_from_type, translate_linearly, surface_from_name
 import math
 
-from part3_traj_opt_kevin import Trajectory
+from traj_opt import Trajectory
 
 
 UNIT_POSE2D = (0., 0., 0.)
@@ -167,21 +167,27 @@ def navigate(robot_name, start_location, end_location):
     
 
     #config_path = [get_joint_positions(world.robot, world.arm_joints), end_config]
-    config_path = rrt.rrt_arm_wrapper(get_joint_positions(world.robot, world.arm_joints), end_config, world.robot, world.arm_joints)
+    start_c = get_joint_positions(world.robot, world.arm_joints)
+    config_path = []
     
-    if config_path == None:
-        print ("ERROR! No config_path found! Exiting program")
-        wait_for_user()
-
-
     if end_location == indigo_drawer_handle_name and start_location == 'nowhere':
         steps = 10
-        opt = Trajectory(world, steps, config_path[0], config_path[-1])
-        init_config_path = opt.discretize(config_path)
-        path = opt.optimize(init_config_path)
+        opt = Trajectory(world, steps, start_c, end_config)
+        init_config_path = [start_c, end_config]
+        transposed_path = opt.optimize(init_config_path)
+        path = np.transpose(np.array(transposed_path))
         config_path = [path]
 
+    else:
+        config_path = rrt.rrt_arm_wrapper(get_joint_positions(world.robot, world.arm_joints), end_config, world.robot, world.arm_joints)
+    
+        if config_path == None:
+            print ("ERROR! No config_path found! Exiting program")
+            wait_for_user()
     current_conf = utils.move(world, config_path, item_in_hand=item_in_hand[robot_name])
+
+
+    
 
 def get_surface_name(surface_name):
     if surface_name == indigo_drawer_center_name:
