@@ -17,8 +17,7 @@ def main():
     exec.world._update_initial()
     exec.action_navigate(exec.world)
 
-    
-    
+
     dirname = os.path.abspath(os.path.join(os.getcwd(), 'part1'))
     domain = os.path.join(dirname,'domain.pddl') #dinner blocksworld.pddl domain.pddl
     problem = os.path.join(dirname,'problem.pddl') #pb1_dinner pb4_blocksworld.pddl problem.pddl
