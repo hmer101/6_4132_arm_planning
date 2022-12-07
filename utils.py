@@ -266,9 +266,9 @@ def move(world, end_confs, item_in_hand=None, sleep_time=0.005, items_on_surface
     for confs in end_confs:
         if interpolate:
             for conf in interpolate_configs(last_conf, confs):
-                move_once(world, conf, item_in_hand, sleep_time, items_on_surface)
+                move_once(world, conf, item_in_hand=item_in_hand, sleep_time=sleep_time, items_on_surface=items_on_surface)
         else:
-            move_once(world, confs, item_in_hand, sleep_time, items_on_surface)
+            move_once(world, confs, item_in_hand=item_in_hand, sleep_time=sleep_time, items_on_surface=items_on_surface)
 
         last_conf = get_joint_positions(world.robot, world.arm_joints)
 
