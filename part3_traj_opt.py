@@ -13,7 +13,7 @@ def main():
 
     # Set up mathematical program with variables
     prog = MathematicalProgram()
-    N = 5 # Number of steps
+    N = 100 # Number of steps
     q = prog.NewContinuousVariables(N,7, "arm_configs") # DOES SWAPPING ROWS AND COLS CHANGE???
 
     #print(x)
