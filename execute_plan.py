@@ -91,6 +91,7 @@ def action_navigate(world):
         goal_pos_lin = translate_linearly(world, 0.01)
         set_joint_positions(world.robot, world.base_joints, goal_pos_lin)
         time.sleep(0.01)
+    
 
 def rand_position(start_pose):
     return multiply(start_pose, Pose(Point(z=1.0)))
