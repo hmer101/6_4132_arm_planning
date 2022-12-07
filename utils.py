@@ -30,8 +30,9 @@ END_EULER = [-math.pi,math.pi/2,0]
 
 ## HELPER FUNCTIONS
 # converted this function from a generator to returning a list
-def interpolate_configs(start_config, end_config, config_step_size=0.01):
-    num_steps = int(math.ceil(get_distance(start_config, end_config)/config_step_size))
+def interpolate_configs(start_config, end_config, config_step_size=0.01, num_steps=None):
+    if num_steps is None:
+        num_steps = int(math.ceil(get_distance(start_config, end_config)/config_step_size))
     configs = [ (1-(float(i)/num_steps))*np.array(start_config) + (float(i)/num_steps)*np.array(end_config) for i in range(num_steps) ]
     return configs
 
