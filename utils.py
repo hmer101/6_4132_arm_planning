@@ -220,47 +220,55 @@ def open_the_drawer(world, surface, items_on_surface=[]):
 def pose_offset(pose, x, y, z):
     return ((pose[0][0]+x,pose[0][1]+y,pose[0][2]+z), pose[1])
 
-# Move the arm in the world by interpolating between end_confs
-def move(world, end_confs, item_in_hand=None, sleep_time=0.005, items_on_surface=[]):
+
+# Function to move to a new config
+def move_once(world, conf, item_in_hand=None, sleep_time=0.005, items_on_surface=[]):
     tool_link = link_from_name(world.robot, 'panda_hand')
-    start_conf = get_joint_positions(world.robot, world.arm_joints)
     ik_joints = get_ik_joints(world.robot, PANDA_INFO, tool_link)
 
     tool_init_pose = get_link_pose(world.robot, tool_link)
     tool_pose_current = None
     tool_pose_prev = get_link_pose(world.robot, tool_link)
+    
+    time.sleep(sleep_time)
 
+    # Set position of robot arm
+    set_joint_positions(world.robot, ik_joints, conf)
+
+    # Get current pose of robot hand
+    tool_pose_current = get_link_pose(world.robot, tool_link)
+
+    if type(item_in_hand) == Surface:
+        drawer_joint = joint_from_name(world.kitchen,item_in_hand.joints[0])
+        delta_tool = tool_pose_current[0][0] - tool_init_pose[0][0]
+        delta_item = tool_pose_current[0][0] - tool_pose_prev[0][0]
+
+        delta_drawer = delta_tool
+        if (delta_tool<0):
+            delta_drawer += DRAWER_LENGTH
+        set_joint_position(int(KITCHEN_BODY), drawer_joint, delta_drawer)
+
+        for body in items_on_surface:
+            pose = get_pose(body)
+            pose_new = pose_offset(pose, delta_item, 0, 0)
+            set_pose(body, pose_new)
+
+    elif not item_in_hand == None:
+        set_pose(item_in_hand, tool_pose_current)
+    tool_pose_prev = tool_pose_current
+
+
+# Move the arm in the world by interpolating between end_confs or not interpolating
+def move(world, end_confs, item_in_hand=None, sleep_time=0.005, items_on_surface=[], interpolate=True):
+    start_conf = get_joint_positions(world.robot, world.arm_joints)
+    
     last_conf = start_conf
     for confs in end_confs:
-        for conf in interpolate_configs(last_conf, confs):
-            time.sleep(sleep_time)
-
-            # Set position of robot arm
-            set_joint_positions(world.robot, ik_joints, conf)
-
-            # Get current pose of robot hand
-            tool_pose_current = get_link_pose(world.robot, tool_link)
-
-            if type(item_in_hand) == Surface:
-                drawer_joint = joint_from_name(world.kitchen,item_in_hand.joints[0])
-                delta_tool = tool_pose_current[0][0] - tool_init_pose[0][0]
-                delta_item = tool_pose_current[0][0] - tool_pose_prev[0][0]
-
-                delta_drawer = delta_tool
-                if (delta_tool<0):
-                    delta_drawer += DRAWER_LENGTH
-                set_joint_position(int(KITCHEN_BODY), drawer_joint, delta_drawer)
-
-                for body in items_on_surface:
-                    thisbody = body
-                    pose = get_pose(body)
-                    pose_new = pose_offset(pose, delta_item, 0, 0)
-                    set_pose(body, pose_new)
-
-            elif not item_in_hand == None:
-                
-                set_pose(item_in_hand, tool_pose_current)
-            tool_pose_prev = tool_pose_current
+        if interpolate:
+            for conf in interpolate_configs(last_conf, confs):
+                move_once(world, conf, item_in_hand, sleep_time, items_on_surface)
+        else:
+            move_once(world, confs, item_in_hand, sleep_time, items_on_surface)
 
         last_conf = get_joint_positions(world.robot, world.arm_joints)
 

@@ -133,7 +133,7 @@ def get_item_offset(robot_name):
     body = item_in_hand[robot_name]
 
 
-def navigate(robot_name, start_location, end_location):
+def navigate(robot_name, start_location, end_location, method='rrt'):
     robot = get_robot(robot_name)
     
     end_pose = planner_get_pose(end_location)
@@ -164,27 +164,40 @@ def navigate(robot_name, start_location, end_location):
         set_joint_positions(world.robot, world.arm_joints, save)
     
     
-    
-
     #config_path = [get_joint_positions(world.robot, world.arm_joints), end_config]
     start_c = get_joint_positions(world.robot, world.arm_joints)
     config_path = []
     
-    if end_location == indigo_drawer_handle_name and start_location == 'nowhere':
-        steps = 10
-        opt = Trajectory(world, steps, start_c, end_config)
-        init_config_path = [start_c, end_config]
-        transposed_path = opt.optimize(init_config_path)
-        path = np.transpose(np.array(transposed_path))
-        config_path = [path]
 
-    else:
+    # Select method to perform navigation
+    if method == 'rrt':
         config_path = rrt.rrt_arm_wrapper(get_joint_positions(world.robot, world.arm_joints), end_config, world.robot, world.arm_joints)
     
         if config_path == None:
             print ("ERROR! No config_path found! Exiting program")
             wait_for_user()
-    current_conf = utils.move(world, config_path, item_in_hand=item_in_hand[robot_name])
+        
+        current_conf = utils.move(world, config_path, item_in_hand=item_in_hand[robot_name])
+
+    elif method=="traj_opt":
+        steps = 10
+        opt = Trajectory(world, steps, start_c, end_config)
+        init_config_path = [start_c, end_config]
+        transposed_path = opt.optimize(init_config_path)
+        config_path = transposed_path
+
+        if config_path == None:
+            print ("ERROR! No config_path found! Exiting program")
+            wait_for_user()
+
+        current_conf = utils.move(world, config_path, item_in_hand=item_in_hand[robot_name], sleep_time=0.1, interpolate=False)
+
+    # else:
+    #     config_path = rrt.rrt_arm_wrapper(get_joint_positions(world.robot, world.arm_joints), end_config, world.robot, world.arm_joints)
+    
+    #     if config_path == None:
+    #         print ("ERROR! No config_path found! Exiting program")
+    #         wait_for_user()
 
 
     
