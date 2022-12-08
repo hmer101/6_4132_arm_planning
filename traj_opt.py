@@ -30,6 +30,14 @@ class Trajectory():
             large_path.extend(interpolate_configs(start, end, num_steps=intermediate_steps))
         return large_path
 
+    # Returns 1 once it has a collision, or (hopefully) returns 0
+    ####################################
+    def has_collision(self, configs):
+        for config in configs:
+            if detect_collision(self.world.robot, config):
+                return 1
+        return 0
+
 
     def optimize(self, init_config_path):
 
@@ -49,7 +57,10 @@ class Trajectory():
             # End config
             self.prog.AddConstraint(abs(q[self.N-1,joint_num]-self.goal[joint_num]) <= radii[joint_num])
 
-            # NEED TO ADD OBSTACLE COLLISION STUFF
+        # NEED TO ADD OBSTACLE COLLISION STUFF
+        # Detect collision for vars=[q0|q1|...|qn]
+        ####################################
+        #self.prog.AddConstraint(self.has_collision, lb=np.zeros(self.N), ub=np.zeros(self.N), vars=q)
 
         # Cost function
         for cost_num in range(self.N-1):
