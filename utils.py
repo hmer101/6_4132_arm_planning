@@ -242,11 +242,11 @@ def move_once(world, conf, item_in_hand=None, sleep_time=0.005, items_on_surface
         drawer_joint = joint_from_name(world.kitchen,item_in_hand.joints[0])
         delta_tool = tool_pose_current[0][0] - tool_init_pose[0][0]
         delta_item = tool_pose_current[0][0] - tool_pose_prev[0][0]
-
+        drawer_position = get_joint_position(int(KITCHEN_BODY), drawer_joint)
         delta_drawer = delta_tool
-        if (delta_tool<0):
-            delta_drawer += DRAWER_LENGTH
-        set_joint_position(int(KITCHEN_BODY), drawer_joint, delta_drawer)
+        #if (delta_tool<0):
+        #    delta_drawer += DRAWER_LENGTH
+        set_joint_position(int(KITCHEN_BODY), drawer_joint, delta_drawer+drawer_position)
 
         for body in items_on_surface:
             pose = get_pose(body)

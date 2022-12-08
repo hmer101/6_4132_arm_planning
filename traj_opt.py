@@ -32,11 +32,8 @@ class Trajectory():
 
     # Returns 1 once it has a collision, or (hopefully) returns 0
     ####################################
-    def has_collision(self, configs):
-        for config in configs:
-            if detect_collision(self.world.robot, config):
-                return 1
-        return 0
+    def has_collision(self, config):
+        return detect_collision(self.world.robot, config)
 
 
     def optimize(self, init_config_path):
@@ -60,7 +57,8 @@ class Trajectory():
         # NEED TO ADD OBSTACLE COLLISION STUFF
         # Detect collision for vars=[q0|q1|...|qn]
         ####################################
-        #self.prog.AddConstraint(self.has_collision, lb=np.zeros(self.N), ub=np.zeros(self.N), vars=q)
+        for i in range(self.N):
+            self.prog.AddConstraint(self.has_collision(q[i]), lb=np.zeros(self.N), ub=np.zeros(self.N), vars=q)
 
         # Cost function
         for cost_num in range(self.N-1):
