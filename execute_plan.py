@@ -1,6 +1,6 @@
 import time
 import numpy as np
-import rrt
+import part2_rrt
 
 import utils
 from pybullet_tools.utils import get_joint_positions, set_joint_positions
@@ -16,7 +16,7 @@ from src.world import World
 from src.utils import COUNTERS, compute_surface_aabb, name_from_type, translate_linearly, surface_from_name
 import math
 
-from traj_opt import Trajectory
+from part3_traj_opt import Trajectory
 
 
 UNIT_POSE2D = (0., 0., 0.)
@@ -103,19 +103,19 @@ def get_robot(robot_name):
     if robot_name == 'franka':
         return world.robot
 
-def planner_get_pose(end_location_name, offset=(0,0,0)):
+def planner_get_pose(location_name, offset=(0,0,0)):
     pos = None
-    if end_location_name == burner_name:
+    if location_name == burner_name:
         pos= pos_burner
-    if end_location_name == indigo_drawer_handle_name:
+    if location_name == indigo_drawer_handle_name:
         areuopen = is_open[indigo_drawer_center_name]
         pos= utils.get_handle_position(world, areuopen)
         #return get_drawer_pose(end_location_name) #TODO CHECK THIS FUNCTION
-    if end_location_name == indigo_drawer_center_name:
+    if location_name == indigo_drawer_center_name:
         pos= pos_indigo_drawer_center
-    if end_location_name == countertop_name:
+    if location_name == countertop_name:
         pos= pos_counter
-    if end_location_name == 'nowhere': # If the robot is nowhere of significance, just return its init config
+    if location_name == 'nowhere': # If the robot is nowhere of significance, just return its init config
         pos= utils.tool_pose_from_config(world.robot, get_joint_positions(world.robot, world.arm_joints))
         #return utils.get_surface_position(world, 'indigo_tmp')
     return utils.pose_offset(pos, offset[0], offset[1], offset[2])
@@ -133,7 +133,7 @@ def get_item_offset(robot_name):
     body = item_in_hand[robot_name]
 
 
-def navigate(robot_name, start_location, end_location, method='combined'):
+def navigate(robot_name, start_location, end_location, method='rrt'):
     robot = get_robot(robot_name)
     
     end_pose = planner_get_pose(end_location)
@@ -171,7 +171,7 @@ def navigate(robot_name, start_location, end_location, method='combined'):
 
     # Select method to perform navigation
     if method == 'rrt':
-        config_path = rrt.rrt_arm_wrapper(get_joint_positions(world.robot, world.arm_joints), end_config, world.robot, world.arm_joints)
+        config_path = part2_rrt.rrt_arm_wrapper(get_joint_positions(world.robot, world.arm_joints), end_config, world.robot, world.arm_joints)
     
         if config_path is None:
             print ("ERROR! No config_path found! Exiting program")
@@ -180,7 +180,7 @@ def navigate(robot_name, start_location, end_location, method='combined'):
         utils.move(world, config_path, item_in_hand=item_in_hand[robot_name])
 
     elif method=="traj_opt":
-        steps = 10
+        steps = 10 #50
         opt = Trajectory(world, steps, start_c, end_config)
         init_config_path = [start_c, end_config]
         transposed_path = opt.optimize(init_config_path)
@@ -190,14 +190,14 @@ def navigate(robot_name, start_location, end_location, method='combined'):
             print ("ERROR! No config_path found! Exiting program")
             wait_for_user()
 
-        utils.move(world, config_path, item_in_hand=item_in_hand[robot_name], sleep_time=0.1, interpolate=False)
+        utils.move(world, config_path, item_in_hand=item_in_hand[robot_name], sleep_time=0.05, interpolate=False) #0.02 005
 
     # Used RRT to give the traj_opt a working init config
     elif method=="combined":
         steps = 10
         opt = Trajectory(world, steps, start_c, end_config)
         
-        init_config_path = rrt.rrt_arm_wrapper(get_joint_positions(world.robot, world.arm_joints), end_config, world.robot, world.arm_joints)
+        init_config_path = part2_rrt.rrt_arm_wrapper(get_joint_positions(world.robot, world.arm_joints), end_config, world.robot, world.arm_joints)
 
         transposed_path = opt.optimize(init_config_path)
         config_path = transposed_path
@@ -282,7 +282,7 @@ def perform_action (name, params):
     if a == 'open-drawer':
         open_drawer(params[0],params[1],params[2])
     if a == 'navigate':
-        navigate(params[0],params[1],params[2])
+        navigate(params[0],params[1],params[2], method="traj_opt")
     if a == 'pick-up':
         pick_up(params[0],params[1],params[2])
     if a == 'place':

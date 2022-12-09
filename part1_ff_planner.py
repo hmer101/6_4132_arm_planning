@@ -3,7 +3,7 @@
 
 from pddl_parser.PDDL import PDDL_Parser
 from pddl_parser.action import Action
-from bfs_planner import BFS_Planner
+from part1_bfs_planner import BFS_Planner
 import os
 
 class FF_Planner():
@@ -270,8 +270,8 @@ if __name__ == '__main__':
 
     # Run on default domain and problem - for project
     dirname = os.path.dirname(__file__)
-    domain = os.path.join(dirname,'domain.pddl') #dinner blocksworld.pddl domain.pddl
-    problem = os.path.join(dirname,'problem.pddl') #pb1_dinner pb4_blocksworld.pddl problem.pddl
+    domain = os.path.join(dirname,'part1_domain.pddl') #dinner blocksworld.pddl domain.pddl
+    problem = os.path.join(dirname,'part1_problem.pddl') #pb1_dinner pb4_blocksworld.pddl problem.pddl
     verbose = False
     debug = False
 

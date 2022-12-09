@@ -149,6 +149,8 @@ def rrt(robot_body, start, goal_sample, distance_fn, sample_fn, extend_fn, colli
     nodes = [TreeNode(start)]
     nodes_goal_connection_tested = []
 
+    goal_pos = utils.tool_pose_from_config(robot_body, goal_sample())[0]
+
     for i in irange(max_iterations):
         if elapsed_time(start_time) >= max_time:
             break
@@ -186,7 +188,7 @@ def rrt(robot_body, start, goal_sample, distance_fn, sample_fn, extend_fn, colli
                     break
 
             # If any config passes through the goal, return this config and parents
-            if goal_test(utils.tool_pose_from_config(robot_body, q)[0],utils.tool_pose_from_config(robot_body, goal_sample())[0], 0.01):
+            if goal_test(utils.tool_pose_from_config(robot_body, q)[0],goal_pos, 0.01):
                 # Add q as final tree node
                 last = TreeNode(q,parent = last) 
                 nodes.append(last)

@@ -10,14 +10,14 @@ sys.path.extend('pybullet')
 import gitmodules
 __import__('padm-project-2022f') 
 
-from pybullet_tools.utils import  get_joints, link_from_name, multiply, Pose, Point, interpolate_poses, set_joint_positions, set_joint_position
-from pybullet_tools.utils import get_link_pose, get_joint_position, get_joint_positions, get_distance, get_angle, clone_body, get_body_info, get_pose, set_pose
+from pybullet_tools.utils import  get_joints, link_from_name, multiply, Pose, Point, interpolate_poses, set_joint_positions, set_joint_position, get_link_subtree, prune_fixed_joints, get_movable_joints
+from pybullet_tools.utils import get_link_pose, get_joint_position, get_joint_positions, get_distance, get_angle, clone_body, get_body_info, get_pose, set_pose, remove_body
 from pybullet_tools.ikfast.franka_panda.ik import PANDA_INFO, FRANKA_URDF
 from pybullet_tools.ikfast.ikfast import get_ik_joints, closest_inverse_kinematics
 from pybullet_tools.transformations import quaternion_from_euler, euler_from_quaternion
 from src.world import World
 from src.utils import compute_surface_aabb, open_surface_joints, surface_from_name, joint_from_name, Surface
-import rrt
+import part2_rrt
 import time
 
 KITCHEN_BODY = 0
@@ -39,6 +39,24 @@ def interpolate_configs(start_config, end_config, config_step_size=0.01, num_ste
 
 # Find the pose of the tool from a given config 
 def tool_pose_from_config(robot_body, config):
+    # # Attempt at cloning body to remove 'glitchy' appearance in RRT
+    # tool_link = link_from_name(robot_body, 'panda_hand')
+    # selected_links = [12,13,14,15,16,17,18,19,20]
+    # assert(tool_link in selected_links)
+    # selected_target_link = selected_links.index(tool_link)
+    # test = 1
+    # sub_robot = clone_body(robot_body, links=selected_links, visual=False, collision=False) # TODO: joint limits
+    # sub_movable_joints = get_movable_joints(sub_robot)
+    # tool_link_sub = sub_movable_joints[-1]
+
+    # # Set joint to new position and get tool pose
+    # set_joint_positions(sub_robot, sub_movable_joints, config)
+    # tool_pose = get_link_pose(sub_robot, tool_link_sub)
+
+    # # Delete sub
+    # remove_body(sub_robot)
+
+    # ORIG
     tool_link = link_from_name(robot_body, 'panda_hand')
     ik_joints = get_ik_joints(robot_body, PANDA_INFO, tool_link)
 
@@ -54,24 +72,24 @@ def tool_pose_from_config(robot_body, config):
 
     return tool_pose
 
-def all_poses_from_config(robot_body, config):
+# def all_poses_from_config(robot_body, config):
 
-    #links = get_joints(robot_body)
-    tool_link = link_from_name(robot_body, 'panda_hand')
-    arm_links = get_ik_joints(robot_body, PANDA_INFO, tool_link)
+#     #links = get_joints(robot_body)
+#     tool_link = link_from_name(robot_body, 'panda_hand')
+#     arm_links = get_ik_joints(robot_body, PANDA_INFO, tool_link)
 
-    # Get original configuration to allow resetting
-    conf_orig = get_joint_positions(robot_body, arm_links)
+#     # Get original configuration to allow resetting
+#     conf_orig = get_joint_positions(robot_body, arm_links)
 
-    # Set joint to new position and get tool pose
-    set_joint_positions(robot_body, arm_links, config)
+#     # Set joint to new position and get tool pose
+#     set_joint_positions(robot_body, arm_links, config)
     
-    poses = [get_link_pose(robot_body, link) for link in arm_links]
+#     poses = [get_link_pose(robot_body, link) for link in arm_links]
 
-    # Reset to original config
-    set_joint_positions(robot_body, arm_links,conf_orig)
+#     # Reset to original config
+#     set_joint_positions(robot_body, arm_links,conf_orig)
 
-    return poses
+#     return poses
 
 
 
@@ -179,7 +197,7 @@ def get_goal_config(world, start_config, end_pose, goal_radius=STANDARD_GOAL_RAD
     # set the joints to the starting config
     for pose in interpolate_poses(start_pose, end_pose, pos_step_size=pose_step_size):
             conf = next(closest_inverse_kinematics(world.robot, PANDA_INFO, tool_link, pose, max_time=ik_time), None)
-            if rrt.goal_test_pos(pose[0], end_pose[0], radius=goal_radius):
+            if part2_rrt.goal_test_pos(pose[0], end_pose[0], radius=goal_radius):
                 return conf
             if visualize:
                 set_joint_positions(world.robot, ik_joints, conf)
