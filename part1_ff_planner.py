@@ -3,7 +3,7 @@
 
 from pddl_parser.PDDL import PDDL_Parser
 from pddl_parser.action import Action
-from bfs_planner import BFS_Planner
+from part1_bfs_planner import BFS_Planner
 import os
 
 class FF_Planner():
@@ -54,10 +54,12 @@ class FF_Planner():
 
                 # Find heuristic of next state
                 action_plan_relaxed, h_next = self.relaxed_plan(next_state)
+                #print(f"\nh_next={h_next} for action {a_dash.name} to state: {next_state}")
                 #print(("State:{}\nAction: {}, {}\nhFF: {}").format(next_state, a_dash.name,a_dash.parameters, h_next))
 
                 # If heuristic of next state is lower than current state, take action - enforced hill climbing
                 if h_next < h_curr:
+                    #print(f"\n*****************\nh_next={h_next}<h_curr={h_curr}, taking action {a_dash.name} to {next_state}...\n****************")
                     h_curr = h_next 
                     state = next_state
                     action_plan.append(a_dash)
@@ -73,7 +75,7 @@ class FF_Planner():
                 action_plan = []
                 break
             elif not flag_next_found:
-                print('PLATEAU REACHED \n')
+                #print('PLATEAU REACHED \n')
                 # Plateau reached - perform BFS to get out
                 bfs_planner = BFS_Planner(frozenset(state), self.s_goal_pos, self.s_goal_neg, self.actions)
                 action_plan_bfs = bfs_planner.solve()
@@ -252,7 +254,8 @@ class FF_Planner():
         plan_relaxed.reverse()        
 
         # Calculate heuristic by counting the number of actions in the relaxed plan
-        h_ff = sum([len(act_layer) for act_layer in plan_relaxed])
+        #h_ff = sum([len(act_layer) for act_layer in plan_relaxed])
+        h_ff = len(plan_relaxed)
 
         return plan_relaxed, h_ff
 
@@ -267,8 +270,8 @@ if __name__ == '__main__':
 
     # Run on default domain and problem - for project
     dirname = os.path.dirname(__file__)
-    domain = os.path.join(dirname,'domain.pddl') #dinner blocksworld.pddl domain.pddl
-    problem = os.path.join(dirname,'problem.pddl') #pb1_dinner pb4_blocksworld.pddl problem.pddl
+    domain = os.path.join(dirname,'part1_domain.pddl') #dinner blocksworld.pddl domain.pddl
+    problem = os.path.join(dirname,'part1_problem.pddl') #pb1_dinner pb4_blocksworld.pddl problem.pddl
     verbose = False
     debug = False
 
@@ -289,3 +292,5 @@ if __name__ == '__main__':
     else:
         print('No plan was found')
         exit(1)
+
+        

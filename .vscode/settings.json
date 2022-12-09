@@ -1,0 +1,6 @@
+{
+    "python.analysis.extraPaths": [
+        "./padm-project-2022f/padm-project-2022f",
+        "./padm-project-2022f/ss-pybullet"
+    ]
+}
