@@ -1,7 +1,7 @@
-# padm_proj1
-Harvey and Kevin's PADM project 1 2022
+# 6.4132/16.413 Final Project
+Harvey and Kevin's 'principles of autonomny and decision making' project 1 2022.
 
-Please find the final project documentation on Google Docs here: https://docs.google.com/document/d/1l4H05ZDN13Z1PVzFIdiocDltyawPMel44Kedhbwq78Y/edit?usp=sharing
+Please find the final project documentation in the file '6_4132_final_report'.
 
 
 ## Setup
