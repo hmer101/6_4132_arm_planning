@@ -1,7 +1,7 @@
 # 6.4132/16.413 Final Project
 Harvey and Kevin's 'principles of autonomny and decision making' project 1 2022.
 
-Please find the final project documentation in the file '6_4132_final_report' (video results viewable here: https://www.youtube.com/watch?v=zNdOW5OerSA).
+Please find the final project documentation in the file '6_4132_final_report' (video results viewable here: [https://www.youtube.com/watch?v=zNdOW5OerSA](https://www.youtube.com/playlist?list=PLB-1S7GUaGtM_dx_j7-77_1kzGEZWZ4MJ)).
 
 
 ## Setup
